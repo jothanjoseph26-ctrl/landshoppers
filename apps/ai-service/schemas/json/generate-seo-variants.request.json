@@ -1,0 +1,74 @@
+{
+  "properties": {
+    "listingId": {
+      "minLength": 1,
+      "title": "Listingid",
+      "type": "string"
+    },
+    "listingTitle": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Listingtitle"
+    },
+    "city": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "City"
+    },
+    "state": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "State"
+    },
+    "propertyType": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Propertytype"
+    },
+    "descriptionHint": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Descriptionhint"
+    }
+  },
+  "required": [
+    "listingId"
+  ],
+  "title": "GenerateSeoVariantsRequest",
+  "type": "object"
+}

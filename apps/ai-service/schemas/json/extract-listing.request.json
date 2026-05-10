@@ -1,0 +1,88 @@
+{
+  "description": "Inbound payload from WhatsApp webhook pipeline (Agent 2 enqueues \u2192 worker calls this).",
+  "properties": {
+    "rawMessageId": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Rawmessageid"
+    },
+    "messageId": {
+      "minLength": 1,
+      "title": "Messageid",
+      "type": "string"
+    },
+    "textContent": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Textcontent"
+    },
+    "mediaUrls": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Mediaurls",
+      "type": "array"
+    },
+    "senderPhone": {
+      "minLength": 3,
+      "title": "Senderphone",
+      "type": "string"
+    },
+    "senderName": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sendername"
+    },
+    "groupId": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Groupid"
+    },
+    "groupName": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Groupname"
+    }
+  },
+  "required": [
+    "messageId",
+    "senderPhone"
+  ],
+  "title": "ExtractListingRequest",
+  "type": "object"
+}

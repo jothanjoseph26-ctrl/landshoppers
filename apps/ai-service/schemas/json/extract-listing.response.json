@@ -1,0 +1,278 @@
+{
+  "$defs": {
+    "AuditSummary": {
+      "description": "Subset returned to callers (no DB id until API persists).",
+      "properties": {
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "promptTokens": {
+          "title": "Prompttokens",
+          "type": "integer"
+        },
+        "completionTokens": {
+          "title": "Completiontokens",
+          "type": "integer"
+        },
+        "totalTokens": {
+          "title": "Totaltokens",
+          "type": "integer"
+        },
+        "costUsd": {
+          "title": "Costusd",
+          "type": "number"
+        },
+        "durationMs": {
+          "title": "Durationms",
+          "type": "integer"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "model",
+        "promptTokens",
+        "completionTokens",
+        "totalTokens",
+        "costUsd",
+        "durationMs",
+        "status"
+      ],
+      "title": "AuditSummary",
+      "type": "object"
+    },
+    "ListingDraft": {
+      "description": "Draft compatible with `Listing` when linked to property + user/agent.",
+      "properties": {
+        "price": {
+          "description": "NGN in kobo",
+          "minimum": 0,
+          "title": "Price",
+          "type": "integer"
+        },
+        "priceNegotiable": {
+          "default": false,
+          "title": "Pricenegotiable",
+          "type": "boolean"
+        },
+        "isForSale": {
+          "default": true,
+          "title": "Isforsale",
+          "type": "boolean"
+        },
+        "isForRent": {
+          "default": false,
+          "title": "Isforrent",
+          "type": "boolean"
+        },
+        "rentPeriod": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rentperiod"
+        },
+        "status": {
+          "default": "draft",
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "price"
+      ],
+      "title": "ListingDraft",
+      "type": "object"
+    },
+    "PropertyDraft": {
+      "description": "Draft rows compatible with `Property` + nested listing creation.",
+      "properties": {
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "slug": {
+          "title": "Slug",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "propertyType": {
+          "title": "Propertytype",
+          "type": "string"
+        },
+        "address": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Address"
+        },
+        "city": {
+          "title": "City",
+          "type": "string"
+        },
+        "state": {
+          "title": "State",
+          "type": "string"
+        },
+        "country": {
+          "default": "Nigeria",
+          "title": "Country",
+          "type": "string"
+        },
+        "latitude": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Latitude"
+        },
+        "longitude": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Longitude"
+        },
+        "bedrooms": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bedrooms"
+        },
+        "bathrooms": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bathrooms"
+        },
+        "toilets": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Toilets"
+        },
+        "squareMeters": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Squaremeters"
+        }
+      },
+      "required": [
+        "title",
+        "slug",
+        "propertyType",
+        "city",
+        "state"
+      ],
+      "title": "PropertyDraft",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "confidence": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "requiresHumanReview": {
+      "title": "Requireshumanreview",
+      "type": "boolean"
+    },
+    "duplicateOfMessageId": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Duplicateofmessageid"
+    },
+    "model": {
+      "title": "Model",
+      "type": "string"
+    },
+    "property": {
+      "$ref": "#/$defs/PropertyDraft"
+    },
+    "listing": {
+      "$ref": "#/$defs/ListingDraft"
+    },
+    "audit": {
+      "$ref": "#/$defs/AuditSummary"
+    }
+  },
+  "required": [
+    "confidence",
+    "requiresHumanReview",
+    "model",
+    "property",
+    "listing",
+    "audit"
+  ],
+  "title": "ExtractListingResponse",
+  "type": "object"
+}

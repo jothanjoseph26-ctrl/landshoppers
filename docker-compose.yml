@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: landshoppers
+    ports:
+      - "55432:5432"
+    volumes:
+      - landshoppers_pg:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "56379:6379"
+
+  opensearch:
+    image: opensearchproject/opensearch:2.11.1
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      plugins.security.disabled: "true"
+      OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m -XX:MaxDirectMemorySize=256m
+    ports:
+      - "9200:9200"
+    volumes:
+      - landshoppers_os:/usr/share/opensearch/data
+    # Optional local-only single node; omit production tuning here.
+
+  # Uncomment when wiring Evolution locally (Evolution holds its own Postgres in production images).
+  # evolution-api:
+  #   image: atende/evolution-api:v2
+  #   profiles: ["evolution"]
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   env_file:
+  #     - ./.env.evolution
+  #   ports:
+  #     - "8080:8080"
+
+volumes:
+  landshoppers_pg:
+  landshoppers_os:

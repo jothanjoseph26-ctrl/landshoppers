@@ -1,0 +1,92 @@
+{
+  "description": "Matches `packages/db` model `AiRequestLog` (persisted by API / optional Python hook).",
+  "properties": {
+    "endpoint": {
+      "title": "Endpoint",
+      "type": "string"
+    },
+    "model": {
+      "title": "Model",
+      "type": "string"
+    },
+    "promptTokens": {
+      "minimum": 0,
+      "title": "Prompttokens",
+      "type": "integer"
+    },
+    "completionTokens": {
+      "minimum": 0,
+      "title": "Completiontokens",
+      "type": "integer"
+    },
+    "totalTokens": {
+      "minimum": 0,
+      "title": "Totaltokens",
+      "type": "integer"
+    },
+    "costUsd": {
+      "minimum": 0,
+      "title": "Costusd",
+      "type": "number"
+    },
+    "durationMs": {
+      "minimum": 0,
+      "title": "Durationms",
+      "type": "integer"
+    },
+    "status": {
+      "title": "Status",
+      "type": "string"
+    },
+    "errorMessage": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Errormessage"
+    },
+    "requestPayload": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Requestpayload"
+    },
+    "responsePayload": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Responsepayload"
+    }
+  },
+  "required": [
+    "endpoint",
+    "model",
+    "promptTokens",
+    "completionTokens",
+    "totalTokens",
+    "costUsd",
+    "durationMs",
+    "status"
+  ],
+  "title": "AiAuditRecord",
+  "type": "object"
+}

@@ -1,0 +1,175 @@
+{
+  "$defs": {
+    "AuditSummary": {
+      "description": "Subset returned to callers (no DB id until API persists).",
+      "properties": {
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "promptTokens": {
+          "title": "Prompttokens",
+          "type": "integer"
+        },
+        "completionTokens": {
+          "title": "Completiontokens",
+          "type": "integer"
+        },
+        "totalTokens": {
+          "title": "Totaltokens",
+          "type": "integer"
+        },
+        "costUsd": {
+          "title": "Costusd",
+          "type": "number"
+        },
+        "durationMs": {
+          "title": "Durationms",
+          "type": "integer"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "model",
+        "promptTokens",
+        "completionTokens",
+        "totalTokens",
+        "costUsd",
+        "durationMs",
+        "status"
+      ],
+      "title": "AuditSummary",
+      "type": "object"
+    },
+    "SeoVariantDraft": {
+      "properties": {
+        "variantType": {
+          "title": "Varianttype",
+          "type": "string"
+        },
+        "seoTitle": {
+          "anyOf": [
+            {
+              "maxLength": 60,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Seotitle"
+        },
+        "metaDescription": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metadescription"
+        },
+        "hashtags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Hashtags",
+          "type": "array"
+        },
+        "fullCopy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fullcopy"
+        },
+        "socialCaption": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Socialcaption"
+        },
+        "tone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tone"
+        },
+        "targetAudience": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Targetaudience"
+        },
+        "status": {
+          "default": "draft",
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "variantType"
+      ],
+      "title": "SeoVariantDraft",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "listingId": {
+      "title": "Listingid",
+      "type": "string"
+    },
+    "variants": {
+      "items": {
+        "$ref": "#/$defs/SeoVariantDraft"
+      },
+      "title": "Variants",
+      "type": "array"
+    },
+    "model": {
+      "title": "Model",
+      "type": "string"
+    },
+    "audit": {
+      "$ref": "#/$defs/AuditSummary"
+    }
+  },
+  "required": [
+    "listingId",
+    "variants",
+    "model",
+    "audit"
+  ],
+  "title": "GenerateSeoVariantsResponse",
+  "type": "object"
+}

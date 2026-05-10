@@ -1,0 +1,4 @@
+# Exclude noisy / generated paths from Turbo task inputs (layout depends on Turbo version).
+.pytest-cache
+.pytest_cache
+**/__pycache__

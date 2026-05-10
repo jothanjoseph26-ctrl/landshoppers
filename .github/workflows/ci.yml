@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint_build_migrate_test:
+    runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/landshoppers_test?schema=public
+      JWT_SECRET: ci-test-jwt-secret-not-for-production-use!!
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.5
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: landshoppers_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Lint (TypeScript & package no-ops)
+        run: pnpm turbo run lint
+
+      - name: AI service tests (pytest)
+        working-directory: apps/ai-service
+        run: |
+          pip install -r requirements-dev.txt
+          python -m pytest -q
+
+      - name: Migrate (verify SQL + PostGIS geography add-on)
+        run: cd packages/db && pnpm exec prisma migrate deploy && pnpm exec prisma generate
+
+      - name: Verify PostGIS (extension + geom + GIST indexes)
+        run: pnpm --filter @landshoppers/db run verify:postgis
+
+      - name: Build (web + prisma generate + api tsc)
+        run: pnpm turbo run build

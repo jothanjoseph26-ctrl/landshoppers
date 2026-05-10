@@ -1,0 +1,982 @@
+// LandShoppers - Global Real Estate Marketplace
+// 24 Tables as per Architecture v1.1
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [postgis]
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  buyer
+  agent
+  developer
+  admin
+  super_admin
+  service_provider
+}
+
+enum PropertyType {
+  apartment
+  house
+  land
+  commercial
+  estate_unit
+}
+
+enum ListingStatus {
+  draft
+  pending_review
+  active
+  paused
+  rejected
+  sold
+  expired
+}
+
+enum InquirySource {
+  web
+  whatsapp
+  direct
+}
+
+enum InquiryStatus {
+  new
+  responded
+  touring
+  closed
+  lost
+}
+
+enum TourType {
+  in_person
+  virtual
+}
+
+enum TourStatus {
+  pending
+  confirmed
+  completed
+  cancelled
+}
+
+enum PaymentType {
+  subscription
+  listing_boost
+  service_listing
+  escrow
+}
+
+enum PaymentGateway {
+  paystack
+  flutterwave
+  stripe
+}
+
+enum PaymentStatus {
+  pending
+  successful
+  failed
+  refunded
+}
+
+enum SubscriptionPlan {
+  agent_basic
+  agent_pro
+  developer_basic
+  developer_pro
+}
+
+enum SubscriptionStatus {
+  active
+  cancelled
+  expired
+  past_due
+}
+
+enum WhatsAppMessageStatus {
+  PENDING
+  PROCESSED
+  APPROVED
+  REJECTED
+  FAILED
+  DUPLICATE
+}
+
+enum ProjectStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  SOLD_OUT
+}
+
+enum UnitStatus {
+  available
+  reserved
+  sold
+}
+
+enum SeoVariantStatus {
+  draft
+  approved
+  scheduled
+  posted
+  rejected
+}
+
+enum SeoChannel {
+  web
+  facebook
+  twitter
+  linkedin
+  instagram
+  whatsapp
+}
+
+enum ServiceCategory {
+  legal
+  mortgage
+  architecture
+  survey
+  insurance
+  renovation
+  photography
+  property_management
+}
+
+enum KycStatus {
+  pending
+  submitted
+  verified
+  rejected
+}
+
+enum NotificationType {
+  system
+  listing
+  inquiry
+  search_alert
+  marketing
+}
+
+// ============================================
+// AUTH MODULE
+// ============================================
+
+model User {
+  id                String    @id @default(uuid()) @db.Uuid
+  email             String    @unique
+  passwordHash      String?
+  role              UserRole  @default(buyer)
+  isEmailVerified   Boolean   @default(false)
+  isPhoneVerified   Boolean   @default(false)
+  phone             String?
+  googleId          String?   @unique
+  lastLoginAt       DateTime?
+  failedLoginCount  Int       @default(0)
+  lockedUntil       DateTime?
+  refreshTokenHash  String?
+  passwordResetTokenHash String?
+  passwordResetExpiresAt DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+
+  // Relations
+  profile           UserProfile?
+  agent             Agent?
+  developer         Developer?
+  serviceProvider   ServiceProvider?
+  listings          Listing[]
+  inquiriesSent     Inquiry[]         @relation("BuyerInquiries")
+  tourRequests      TourRequest[]     @relation("BuyerTours")
+  savedSearches     SavedSearch[]
+  savedListings     SavedListing[]
+  listingRecentViews ListingRecentView[]
+  notifications     Notification[]
+  messagesSent      Message[]         @relation("MessageSender")
+  messagesReceived  Message[]         @relation("MessageReceiver")
+  reviewsGiven      Review[]          @relation("ReviewAuthor")
+  auditLogs         AuditLog[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model UserProfile {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @unique @db.Uuid
+  firstName       String?
+  lastName        String?
+  avatarUrl       String?
+  dateOfBirth     DateTime?
+  address         String?
+  city            String?
+  state           String?
+  country         String?   @default("Nigeria")
+  bio             String?
+  preferences     Json?     // Saved preferences as JSON
+  notifyEmail     Boolean   @default(true)
+  notifySms       Boolean   @default(true)
+  notifyPush      Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+// ============================================
+// AGENTS MODULE
+// ============================================
+
+model Agent {
+  id                  String    @id @default(uuid()) @db.Uuid
+  userId              String    @unique @db.Uuid
+  agencyName          String?
+  licenseNumber       String?
+  bvnHash             String?   // SHA-256 hash of BVN - NEVER plaintext
+  ninHash             String?   // SHA-256 hash of NIN - NEVER plaintext
+  kycStatus           KycStatus @default(pending)
+  kycDocuments        Json?     // Array of document URLs
+  kycSubmittedAt      DateTime?
+  kycVerifiedAt       DateTime?
+  kycRejectionReason  String?
+  isVerified          Boolean   @default(false)
+  verificationBadge   Boolean   @default(false)
+  specializations     String[]  // Array of specializations
+  yearsOfExperience   Int?
+  totalListings       Int       @default(0)
+  totalSales          Int       @default(0)
+  rating              Float     @default(0)
+  reviewCount         Int       @default(0)
+  referralCode        String?   @unique
+  referredBy          String?   @db.Uuid
+  commissionEarned    BigInt    @default(0) // In kobo
+  walletBalance       BigInt    @default(0) // In kobo
+  socialLinks         Json?     // { facebook, instagram, linkedin, twitter }
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listings            Listing[]
+  inquiriesReceived   Inquiry[]         @relation("AgentInquiries")
+  toursScheduled      TourRequest[]     @relation("AgentTours")
+  subscription        Subscription?
+  payments            Payment[]
+  reviews             Review[]          @relation("AgentReviews")
+
+  @@index([kycStatus])
+  @@index([isVerified])
+  @@index([referralCode])
+  @@map("agents")
+}
+
+// ============================================
+// DEVELOPERS MODULE
+// ============================================
+
+model Developer {
+  id                  String    @id @default(uuid()) @db.Uuid
+  userId              String    @unique @db.Uuid
+  companyName         String
+  rcNumber            String?   // CAC Registration Number
+  cacDocuments        Json?     // Array of CAC document URLs
+  kycStatus           KycStatus @default(pending)
+  kycSubmittedAt      DateTime?
+  kycVerifiedAt       DateTime?
+  kycRejectionReason  String?
+  isVerified          Boolean   @default(false)
+  companyAddress      String?
+  companyCity         String?
+  companyState        String?
+  companyPhone        String?
+  companyEmail        String?
+  companyWebsite      String?
+  companyLogo         String?
+  description         String?
+  totalProjects       Int       @default(0)
+  totalUnitsSold      Int       @default(0)
+  rating              Float     @default(0)
+  reviewCount         Int       @default(0)
+  socialLinks         Json?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  user                User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects            DeveloperProject[]
+  teamMembers         DeveloperTeamMember[]
+  subscription        Subscription?           @relation("DeveloperSubscription")
+  reviews             Review[]                @relation("DeveloperReviews")
+
+  @@index([kycStatus])
+  @@index([isVerified])
+  @@map("developers")
+}
+
+model DeveloperTeamMember {
+  id            String    @id @default(uuid()) @db.Uuid
+  developerId   String    @db.Uuid
+  email         String
+  name          String
+  role          String    // e.g., "Sales Rep", "Manager"
+  phone         String?
+  isActive      Boolean   @default(true)
+  permissions   Json?     // Array of permission strings
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  developer     Developer @relation(fields: [developerId], references: [id], onDelete: Cascade)
+
+  @@unique([developerId, email])
+  @@map("developer_team_members")
+}
+
+model DeveloperProject {
+  id              String        @id @default(uuid()) @db.Uuid
+  developerId     String        @db.Uuid
+  name            String
+  slug            String        @unique
+  description     String?
+  shortDescription String?
+  status          ProjectStatus @default(UPCOMING)
+  propertyType    PropertyType
+  address         String?
+  city            String
+  state           String
+  country         String        @default("Nigeria")
+  latitude        Float?
+  longitude       Float?
+  /// PostGIS geography(Point,4326) — created in migration `20260509120001_postgis_geom`.
+  geom Unsupported("geography(Point,4326)")?
+  priceRangeMin   BigInt?       // In kobo
+  priceRangeMax   BigInt?       // In kobo
+  totalUnits      Int           @default(0)
+  availableUnits  Int           @default(0)
+  soldUnits       Int           @default(0)
+  amenities       String[]
+  features        String[]
+  images          String[]
+  floorPlans      String[]
+  brochureUrl     String?
+  virtualTourUrl  String?
+  completionDate  DateTime?
+  launchDate      DateTime?
+  isFeatured      Boolean       @default(false)
+  viewCount       Int           @default(0)
+  inquiryCount    Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
+
+  developer       Developer     @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  units           ProjectUnit[]
+  inquiries       Inquiry[]     @relation("ProjectInquiries")
+
+  @@index([developerId])
+  @@index([status])
+  @@index([city, state])
+  @@index([isFeatured])
+  @@map("developer_projects")
+}
+
+model ProjectUnit {
+  id              String      @id @default(uuid()) @db.Uuid
+  projectId       String      @db.Uuid
+  unitName        String      // e.g., "Unit A1", "Block B - Floor 3"
+  unitType        String      // e.g., "2 Bedroom", "3 Bedroom Penthouse"
+  bedrooms        Int?
+  bathrooms       Int?
+  toilets         Int?
+  squareMeters    Float?
+  price           BigInt      // In kobo
+  status          UnitStatus  @default(available)
+  floorPlan       String?
+  features        String[]
+  reservedAt      DateTime?
+  soldAt          DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  project         DeveloperProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([status])
+  @@map("project_units")
+}
+
+// ============================================
+// LISTINGS MODULE
+// ============================================
+
+model Property {
+  id              String        @id @default(uuid()) @db.Uuid
+  title           String
+  slug            String        @unique
+  description     String?
+  propertyType    PropertyType
+  address         String?
+  street          String?
+  city            String
+  state           String
+  country         String        @default("Nigeria")
+  postalCode      String?
+  latitude        Float?
+  longitude       Float?
+  /// PostGIS geography(Point,4326) — created in migration `20260509120001_postgis_geom`.
+  geom Unsupported("geography(Point,4326)")?
+  bedrooms        Int?
+  bathrooms       Int?
+  toilets         Int?
+  squareMeters    Float?
+  yearBuilt       Int?
+  parkingSpaces   Int?
+  isFurnished     Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
+
+  listings        Listing[]
+  features        ListingFeature[]
+
+  @@index([city, state])
+  @@index([propertyType])
+  @@map("properties")
+}
+
+model Listing {
+  id              String          @id @default(uuid()) @db.Uuid
+  propertyId      String          @db.Uuid
+  agentId         String?         @db.Uuid
+  userId          String          @db.Uuid
+  price           BigInt          // In kobo (₦1 = 100 kobo)
+  priceNegotiable Boolean         @default(false)
+  status          ListingStatus   @default(draft)
+  isForSale       Boolean         @default(true)
+  isForRent       Boolean         @default(false)
+  rentPeriod      String?         // "monthly", "yearly"
+  isFeatured      Boolean         @default(false)
+  featuredUntil   DateTime?
+  viewCount       Int             @default(0)
+  inquiryCount    Int             @default(0)
+  virtualTourUrl  String?
+  videoUrl        String?
+  publishedAt     DateTime?
+  expiresAt       DateTime?       // 90-day default
+  sourceType      String?         // "web", "whatsapp", "bulk_upload"
+  sourceMessageId String?         @db.Uuid // Reference to raw_whatsapp_messages if applicable
+  submittedAt     DateTime?
+  approvedAt      DateTime?
+  approvedBy      String?         @db.Uuid
+  rejectedAt      DateTime?
+  rejectedBy      String?         @db.Uuid
+  rejectionReason String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  deletedAt       DateTime?
+
+  property        Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  agent           Agent?          @relation(fields: [agentId], references: [id])
+  user            User            @relation(fields: [userId], references: [id])
+  images          ListingImage[]
+  inquiries       Inquiry[]
+  tourRequests    TourRequest[]
+  reviews         Review[]        @relation("ListingReviews")
+  seoVariants     ListingSeoVariant[]
+  priceHistory    ListingPriceHistory[]
+  savedByUsers    SavedListing[]
+  recentViews     ListingRecentView[]
+
+  @@index([status, price])
+  @@index([agentId])
+  @@index([isFeatured, expiresAt])
+  @@index([propertyId])
+  @@map("listings")
+}
+
+model ListingImage {
+  id          String    @id @default(uuid()) @db.Uuid
+  listingId   String    @db.Uuid
+  url         String
+  thumbnailUrl String?
+  altText     String?
+  isPrimary   Boolean   @default(false)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  listing     Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@map("listing_images")
+}
+
+model ListingFeature {
+  id          String    @id @default(uuid()) @db.Uuid
+  propertyId  String    @db.Uuid
+  feature     String    // pool, gym, generator, security, borehole, solar, parking, elevator
+
+  property    Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, feature])
+  @@map("listing_features")
+}
+
+model ListingPriceHistory {
+  id          String    @id @default(uuid()) @db.Uuid
+  listingId   String    @db.Uuid
+  price       BigInt    // In kobo
+  changedAt   DateTime  @default(now())
+
+  listing     Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@map("listing_price_history")
+}
+
+// ============================================
+// SEARCH MODULE
+// ============================================
+
+model SavedSearch {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @db.Uuid
+  name            String?
+  filters         Json      // Serialized Elasticsearch filter object
+  emailAlerts     Boolean   @default(true)
+  alertFrequency  String    @default("daily") // "instant", "daily", "weekly"
+  lastAlertSent   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("saved_searches")
+}
+
+model SavedListing {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  listingId String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@index([listingId])
+  @@map("saved_listings")
+}
+
+model ListingRecentView {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  listingId    String   @db.Uuid
+  lastViewedAt DateTime @default(now()) @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([userId, lastViewedAt])
+  @@map("listing_recent_views")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  type      NotificationType @default(system)
+  title     String
+  body      String?
+  metadata  Json?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+// ============================================
+// INQUIRIES & TOURS
+// ============================================
+
+model Inquiry {
+  id              String        @id @default(uuid()) @db.Uuid
+  listingId       String?       @db.Uuid
+  projectId       String?       @db.Uuid
+  buyerId         String        @db.Uuid
+  agentId         String?       @db.Uuid
+  source          InquirySource @default(web)
+  status          InquiryStatus @default(new)
+  message         String?
+  buyerName       String?
+  buyerEmail      String?
+  buyerPhone      String?
+  respondedAt     DateTime?
+  closedAt        DateTime?
+  closedReason    String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  listing         Listing?          @relation(fields: [listingId], references: [id])
+  project         DeveloperProject? @relation("ProjectInquiries", fields: [projectId], references: [id])
+  buyer           User              @relation("BuyerInquiries", fields: [buyerId], references: [id])
+  agent           Agent?            @relation("AgentInquiries", fields: [agentId], references: [id])
+
+  @@index([listingId])
+  @@index([agentId, status])
+  @@index([buyerId])
+  @@map("inquiries")
+}
+
+model TourRequest {
+  id              String      @id @default(uuid()) @db.Uuid
+  listingId       String      @db.Uuid
+  buyerId         String      @db.Uuid
+  agentId         String?     @db.Uuid
+  tourType        TourType    @default(in_person)
+  status          TourStatus  @default(pending)
+  preferredDate   DateTime
+  preferredTime   String?     // e.g., "10:00 AM"
+  confirmedDate   DateTime?
+  notes           String?
+  buyerPhone      String?
+  completedAt     DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  listing         Listing     @relation(fields: [listingId], references: [id])
+  buyer           User        @relation("BuyerTours", fields: [buyerId], references: [id])
+  agent           Agent?      @relation("AgentTours", fields: [agentId], references: [id])
+
+  @@index([listingId])
+  @@index([agentId, status])
+  @@index([buyerId])
+  @@map("tour_requests")
+}
+
+// ============================================
+// MESSAGING MODULE
+// ============================================
+
+model Message {
+  id          String    @id @default(uuid()) @db.Uuid
+  threadId    String    @db.Uuid // Groups conversation
+  senderId    String    @db.Uuid
+  receiverId  String    @db.Uuid
+  content     String
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  sender      User      @relation("MessageSender", fields: [senderId], references: [id])
+  receiver    User      @relation("MessageReceiver", fields: [receiverId], references: [id])
+
+  @@index([threadId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+// ============================================
+// REVIEWS MODULE
+// ============================================
+
+model Review {
+  id            String    @id @default(uuid()) @db.Uuid
+  authorId      String    @db.Uuid
+  // Polymorphic target
+  targetType    String    // "agent", "listing", "service_provider", "developer"
+  agentId       String?   @db.Uuid
+  listingId     String?   @db.Uuid
+  serviceProviderId String? @db.Uuid
+  developerId   String?   @db.Uuid
+  rating        Int       // 1-5
+  title         String?
+  content       String?
+  isVerified    Boolean   @default(false) // Verified purchase/interaction
+  isPublished   Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  author        User              @relation("ReviewAuthor", fields: [authorId], references: [id])
+  agent         Agent?            @relation("AgentReviews", fields: [agentId], references: [id])
+  listing       Listing?          @relation("ListingReviews", fields: [listingId], references: [id])
+  serviceProvider ServiceProvider? @relation("ServiceProviderReviews", fields: [serviceProviderId], references: [id])
+  developer     Developer?        @relation("DeveloperReviews", fields: [developerId], references: [id])
+
+  @@index([targetType])
+  @@index([agentId])
+  @@index([listingId])
+  @@index([serviceProviderId])
+  @@index([developerId])
+  @@map("reviews")
+}
+
+// ============================================
+// PAYMENTS MODULE
+// ============================================
+
+model Subscription {
+  id                String              @id @default(uuid()) @db.Uuid
+  agentId           String?             @unique @db.Uuid
+  developerId       String?             @unique @db.Uuid
+  plan              SubscriptionPlan
+  status            SubscriptionStatus  @default(active)
+  paystackSubCode   String?             // Paystack subscription code
+  paystackCustomerId String?
+  currentPeriodStart DateTime
+  currentPeriodEnd  DateTime
+  cancelledAt       DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  agent             Agent?              @relation(fields: [agentId], references: [id])
+  developer         Developer?          @relation("DeveloperSubscription", fields: [developerId], references: [id])
+
+  @@map("subscriptions")
+}
+
+model Payment {
+  id                String          @id @default(uuid()) @db.Uuid
+  agentId           String?         @db.Uuid
+  type              PaymentType
+  gateway           PaymentGateway  @default(paystack)
+  status            PaymentStatus   @default(pending)
+  amount            BigInt          // In kobo
+  currency          String          @default("NGN")
+  reference         String          @unique // Gateway reference
+  gatewayResponse   Json?           // Full gateway response
+  metadata          Json?           // Additional data (listing_id for boost, etc.)
+  paidAt            DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  agent             Agent?          @relation(fields: [agentId], references: [id])
+
+  @@index([reference])
+  @@index([agentId])
+  @@index([status])
+  @@map("payments")
+}
+
+// ============================================
+// SERVICE DIRECTORY MODULE
+// ============================================
+
+model ServiceProvider {
+  id              String          @id @default(uuid()) @db.Uuid
+  userId          String          @unique @db.Uuid
+  businessName    String
+  slug            String          @unique
+  category        ServiceCategory
+  description     String?
+  services        String[]        // Array of services offered
+  address         String?
+  city            String
+  state           String
+  country         String          @default("Nigeria")
+  phone           String?
+  email           String?
+  website         String?
+  logoUrl         String?
+  galleryImages   String[]
+  rating          Float           @default(0)
+  reviewCount     Int             @default(0)
+  isVerified      Boolean         @default(false)
+  isPremium       Boolean         @default(false)
+  premiumUntil    DateTime?
+  viewCount       Int             @default(0)
+  leadCount       Int             @default(0)
+  socialLinks     Json?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  deletedAt       DateTime?
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviews         Review[]        @relation("ServiceProviderReviews")
+
+  @@index([category])
+  @@index([city, state])
+  @@index([isPremium])
+  @@map("service_providers")
+}
+
+// ============================================
+// WHATSAPP AUTOMATION MODULE
+// ============================================
+
+model RawWhatsAppMessage {
+  id              String                  @id @default(uuid()) @db.Uuid
+  messageId       String                  @unique // WhatsApp message ID
+  groupId         String?                 // WhatsApp group ID
+  groupName       String?
+  senderPhone     String
+  senderName      String?
+  messageType     String                  // text, image, video, document
+  textContent     String?
+  mediaUrls       String[]
+  status          WhatsAppMessageStatus   @default(PENDING)
+  extractedData   Json?                   // AI-extracted structured data
+  confidenceScore Float?                  // 0.0 - 1.0
+  extractionError String?
+  processedAt     DateTime?
+  approvedAt      DateTime?
+  approvedBy      String?                 @db.Uuid
+  rejectedAt      DateTime?
+  rejectedBy      String?                 @db.Uuid
+  rejectionReason String?
+  createdListingId String?                @db.Uuid
+  duplicateOfId   String?                 @db.Uuid // Reference to duplicate message
+  receivedAt      DateTime                @default(now())
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  @@index([status])
+  @@index([messageId])
+  @@index([groupId])
+  @@index([senderPhone])
+  @@map("raw_whatsapp_messages")
+}
+
+model WhatsAppGroup {
+  id              String    @id @default(uuid()) @db.Uuid
+  groupId         String    @unique // WhatsApp group ID
+  groupName       String
+  isMonitored     Boolean   @default(true)
+  messageCount    Int       @default(0)
+  lastActivityAt  DateTime?
+  addedAt         DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("whatsapp_groups")
+}
+
+// ============================================
+// SEO ENGINE MODULE
+// ============================================
+
+model ListingSeoVariant {
+  id              String            @id @default(uuid()) @db.Uuid
+  listingId       String            @db.Uuid
+  variantType     String            // luxury, investment, family, diaspora, urgency, social_x, social_li, social_fb, whatsapp, seo_long
+  seoTitle        String?           // 60 chars max
+  metaDescription String?           // 160 chars max
+  hashtags        String[]
+  fullCopy        String?           // 200-1200 words
+  socialCaption   String?           // Platform-appropriate shortened version
+  tone            String?
+  targetAudience  String?
+  status          SeoVariantStatus  @default(draft)
+  approvedAt      DateTime?
+  approvedBy      String?           @db.Uuid
+  rejectedAt      DateTime?
+  rejectedBy      String?           @db.Uuid
+  rejectionReason String?
+  scheduledAt     DateTime?
+  postedAt        DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  listing         Listing           @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  postingSchedules SeoPostingSchedule[]
+
+  @@index([listingId])
+  @@index([status, scheduledAt])
+  @@index([variantType])
+  @@map("listing_seo_variants")
+}
+
+model SeoPostingSchedule {
+  id              String      @id @default(uuid()) @db.Uuid
+  variantId       String      @db.Uuid
+  channel         SeoChannel
+  scheduledAt     DateTime
+  postedAt        DateTime?
+  externalPostId  String?     // Post ID from external platform
+  status          String      @default("scheduled") // scheduled, posted, failed
+  errorMessage    String?
+  engagementData  Json?       // { impressions, clicks, likes, shares, comments }
+  lastPolledAt    DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  variant         ListingSeoVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@index([variantId])
+  @@index([channel])
+  @@index([scheduledAt])
+  @@index([status])
+  @@map("seo_posting_schedule")
+}
+
+// ============================================
+// AI MODULE
+// ============================================
+
+model AiRequestLog {
+  id              String    @id @default(uuid()) @db.Uuid
+  endpoint        String    // /extract-listing, /generate-seo-variants, etc.
+  model           String    // claude-3.5-sonnet, grok, gpt-4o
+  promptTokens    Int
+  completionTokens Int
+  totalTokens     Int
+  costUsd         Float     // Cost in USD
+  durationMs      Int       // Request duration
+  status          String    // success, error, rate_limited
+  errorMessage    String?
+  requestPayload  Json?     // Sanitized request (no PII)
+  responsePayload Json?     // Sanitized response
+  createdAt       DateTime  @default(now())
+
+  @@index([endpoint])
+  @@index([model])
+  @@index([createdAt])
+  @@map("ai_request_log")
+}
+
+// ============================================
+// AUDIT LOG MODULE
+// ============================================
+
+model AuditLog {
+  id          String    @id @default(uuid()) @db.Uuid
+  actorId     String?   @db.Uuid
+  actorEmail  String?
+  actorRole   UserRole?
+  action      String    // e.g., "user.create", "listing.approve", "kyc.verify"
+  targetType  String?   // e.g., "user", "listing", "agent"
+  targetId    String?   @db.Uuid
+  changes     Json?     // { before: {}, after: {} }
+  ipAddress   String?
+  userAgent   String?
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+
+  actor       User?     @relation(fields: [actorId], references: [id])
+
+  @@index([actorId, createdAt])
+  @@index([action])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@map("audit_log")
+}
