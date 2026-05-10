@@ -15,6 +15,13 @@ If Windows resolves `python` to a broken Microsoft Store alias, set `LANDSHOPPER
 
 Copy `.env.example` to `.env` at the repository root. `packages/db` loads this path via `prisma.config.ts`.
 
+For Neon, set both database URLs:
+
+- `DATABASE_URL`: pooled connection string for the API, workers, AI audit writes, and other runtime clients.
+- `DIRECT_URL`: direct connection string for Prisma migrations and PostGIS extension setup.
+
+Both Neon URLs should include `sslmode=require`, and `DIRECT_URL` should use the non-pooler host.
+
 ## Local database
 
 Start services:

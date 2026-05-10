@@ -6,7 +6,8 @@ import { defineConfig } from "prisma/config";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Load DATABASE_URL from monorepo root when running prisma from packages/db
+// Load DATABASE_URL / DIRECT_URL from monorepo root when running prisma from packages/db.
+// Neon should use the pooled DATABASE_URL for app runtime and DIRECT_URL for migrations.
 config({ path: resolve(__dirname, "../../.env") });
 
 export default defineConfig({
@@ -16,6 +17,6 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"],
   },
 });
