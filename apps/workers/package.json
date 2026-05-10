@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
+    "prebuild": "pnpm --filter @landshoppers/db run generate",
     "build": "tsc -p tsconfig.json",
     "lint": "tsc --noEmit -p tsconfig.json",
     "enqueue-smoke": "tsx src/cli/enqueue-smoke.ts"
