@@ -15,6 +15,8 @@ import {
 } from '@/components/ui/card'
 import { fetchDevelopersCatalog } from '@/lib/api/directory'
 
+export const dynamic = 'force-dynamic'
+
 export default async function DevelopersPage() {
   const { data: developers } = await fetchDevelopersCatalog({ pageSize: 48 })
 
