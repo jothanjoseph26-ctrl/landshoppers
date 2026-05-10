@@ -47,6 +47,11 @@ export function mapApiListingToDetailView(row: ApiListing) {
   const created = new Date(row.createdAt).getTime()
   const isNew = Date.now() - created < 14 * 24 * 60 * 60 * 1000
 
+  const priceHistory = (row.priceHistory ?? []).map((h) => ({
+    date: h.changedAt,
+    price: koboToNairaNumber(h.price),
+  }))
+
   return {
     id: row.id,
     title: p.title,
@@ -55,7 +60,7 @@ export function mapApiListingToDetailView(row: ApiListing) {
       p.description ??
       "Description will appear here once the listing detail pipeline is fully wired.",
     price,
-    priceHistory: [] as { date: string; price: number }[],
+    priceHistory,
     location: p.city,
     address: p.address ?? p.street ?? `${p.city}`,
     city: p.city,

@@ -221,7 +221,7 @@ authV1.post("/logout", requireAuth, async (c) => {
   return c.json({ data: { ok: true } });
 });
 
-authV1.post("/verify-otp", zValidator("json", verifyOtpBodySchema), async (c) => {
+authV1.post("/verify-otp", otpRateLimit, zValidator("json", verifyOtpBodySchema), async (c) => {
   const body = c.req.valid("json");
   const devCode = process.env["DEV_OTP_CODE"] ?? "000000";
   if (body.code !== devCode) {
@@ -253,7 +253,7 @@ authV1.post("/verify-otp", zValidator("json", verifyOtpBodySchema), async (c) =>
   });
 });
 
-authV1.post("/resend-otp", zValidator("json", resendOtpBodySchema), async (c) => {
+authV1.post("/resend-otp", otpRateLimit, zValidator("json", resendOtpBodySchema), async (c) => {
   const body = c.req.valid("json");
   const user = await prisma.user.findFirst({
     where: { email: body.email, deletedAt: null },
@@ -271,6 +271,92 @@ authV1.post("/resend-otp", zValidator("json", resendOtpBodySchema), async (c) =>
     },
   });
 });
+
+authV1.get("/me", requireAuth, async (c) => {
+  const authUser = c.get("authUser");
+  if (!authUser) {
+    throw new ApiError(401, "UNAUTHORIZED", "Authentication required");
+  }
+  const user = await prisma.user.findFirst({
+    where: { id: authUser.id, deletedAt: null },
+    include: {
+      profile: true,
+      agent: true,
+      developer: true,
+      serviceProvider: true,
+    },
+  });
+  if (!user) {
+    throw new ApiError(404, "NOT_FOUND", "User not found");
+  }
+  return c.json({ data: meToJson(user) });
+});
+
+/** POST /v1/auth/password-reset/request — issues dev-provider token via stub. */
+authV1.post(
+  "/password-reset/request",
+  passwordResetRateLimit,
+  zValidator("json", passwordResetRequestBodySchema),
+  async (c) => {
+    const body = c.req.valid("json");
+    const user = await prisma.user.findFirst({
+      where: { email: body.email, deletedAt: null },
+    });
+
+    // Do not leak existence; respond 200 either way. Token included only in dev mode.
+    if (!user) {
+      return c.json({
+        data: {
+          ok: true,
+          delivery: "dev",
+          expiresInSeconds: 60 * 30,
+        },
+      });
+    }
+
+    const { rawToken, expiresAt } = await createPasswordResetToken(user.id);
+    const isDev = process.env["NODE_ENV"] !== "production";
+
+    return c.json({
+      data: {
+        ok: true,
+        delivery: "dev",
+        expiresInSeconds: Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000)),
+        ...(isDev ? { token: rawToken } : {}),
+      },
+    });
+  },
+);
+
+/** POST /v1/auth/password-reset/confirm — exchange single-use token for new password. */
+authV1.post(
+  "/password-reset/confirm",
+  passwordResetRateLimit,
+  zValidator("json", passwordResetConfirmBodySchema),
+  async (c) => {
+    const body = c.req.valid("json");
+    const user = await consumePasswordResetToken(body.token);
+    if (!user) {
+      throw new ApiError(400, "INVALID_RESET_TOKEN", "Reset token is invalid or expired");
+    }
+
+    const passwordHash = await hashPassword(body.password);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        failedLoginCount: 0,
+        lockedUntil: null,
+        passwordResetTokenHash: null,
+        passwordResetExpiresAt: null,
+        refreshTokenHash: null,
+      },
+    });
+
+    return c.json({ data: { ok: true } });
+  },
+);
 
 authV1.get("/google/start", (c) => notImplemented(c));
 

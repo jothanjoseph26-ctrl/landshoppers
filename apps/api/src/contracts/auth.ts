@@ -39,6 +39,19 @@ export const resendOtpBodySchema = z.object({
   email: z.string().email(),
 });
 
+/** POST /v1/auth/password-reset/request */
+export const passwordResetRequestBodySchema = z.object({
+  email: z.string().email(),
+});
+
+/** POST /v1/auth/password-reset/confirm */
+export const passwordResetConfirmBodySchema = z.object({
+  token: z.string().min(16).max(256),
+  password: z.string().min(8).max(128),
+});
+
 export type RegisterBody = z.infer<typeof registerBodySchema>;
 export type LoginBody = z.infer<typeof loginBodySchema>;
 export type RefreshBody = z.infer<typeof refreshBodySchema>;
+export type PasswordResetRequestBody = z.infer<typeof passwordResetRequestBodySchema>;
+export type PasswordResetConfirmBody = z.infer<typeof passwordResetConfirmBodySchema>;

@@ -55,7 +55,7 @@ export function InquiryForm({ listingId, listingTitle, agent }: InquiryFormProps
   const whatsappLink = `https://wa.me/${agent.whatsapp || agent.phone}?text=${whatsappMessage}`
 
   return (
-    <Card className="sticky top-24 shadow-lg">
+    <Card className="shadow-lg">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg">Contact Agent</CardTitle>
       </CardHeader>

@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Progress } from "@/components/ui/progress"
+import { PortalPendingApiBanner } from "@/components/dashboard/portal-banner"
 
 const mockProjects = [
   {
@@ -129,7 +130,11 @@ export default function DeveloperProjectsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      <PortalPendingApiBanner
+        title="Project management UI is using sample data"
+        description="The /v1/developer/projects endpoints land in a future slice. Buyers can already browse public projects via the /projects routes."
+      />
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">My Projects</h1>

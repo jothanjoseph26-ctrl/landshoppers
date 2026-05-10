@@ -2,6 +2,8 @@ import { Queue } from "bullmq";
 import type { Redis } from "ioredis";
 
 import {
+  QUEUE_LISTING_INDEX,
+  QUEUE_SAVED_SEARCH_ALERTS,
   QUEUE_SEO_GENERATION,
   QUEUE_WHATSAPP_EXTRACTION,
 } from "./constants.js";
@@ -15,6 +17,14 @@ export function createQueues(connection: Redis) {
       defaultJobOptions: defaultProducerJobOptions,
     }),
     seoGeneration: new Queue(QUEUE_SEO_GENERATION, {
+      connection,
+      defaultJobOptions: defaultProducerJobOptions,
+    }),
+    listingIndex: new Queue(QUEUE_LISTING_INDEX, {
+      connection,
+      defaultJobOptions: defaultProducerJobOptions,
+    }),
+    savedSearchAlerts: new Queue(QUEUE_SAVED_SEARCH_ALERTS, {
       connection,
       defaultJobOptions: defaultProducerJobOptions,
     }),

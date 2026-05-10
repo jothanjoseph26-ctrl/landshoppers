@@ -5,8 +5,11 @@
 export { createRedis } from "./connection.js";
 export { createQueues } from "./queues.js";
 export {
+  DLQ_LISTING_INDEX,
   DLQ_SEO_GENERATION,
   DLQ_WHATSAPP_EXTRACTION,
+  QUEUE_LISTING_INDEX,
+  QUEUE_SAVED_SEARCH_ALERTS,
   QUEUE_SEO_GENERATION,
   QUEUE_WHATSAPP_EXTRACTION,
 } from "./constants.js";

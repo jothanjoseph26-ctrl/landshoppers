@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -27,14 +28,22 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+def _cors_allow_origins() -> list[str]:
+    origins = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:4001",
         "http://127.0.0.1:4001",
-    ],
+    ]
+    extra = os.getenv("AI_CORS_ORIGINS", "")
+    if extra.strip():
+        origins.extend(x.strip() for x in extra.split(",") if x.strip())
+    return origins
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MarketListingsStat } from "@/components/developer/market-listings-stat"
+import { PortalPendingApiBanner } from "@/components/dashboard/portal-banner"
 
 const stats = [
   {
@@ -130,7 +131,11 @@ const leadStatusColors: Record<string, string> = {
 export default function DeveloperDashboard() {
   return (
     <div className="space-y-8">
-      {/* Page Header */}
+      <PortalPendingApiBanner
+        title="Developer portal renders sample data"
+        description="The marketplace listings count is live; the rest of the dashboard waits on the developer projects/leads API."
+      />
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>

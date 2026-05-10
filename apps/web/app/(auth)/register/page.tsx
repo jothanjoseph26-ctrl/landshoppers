@@ -107,6 +107,7 @@ export default function RegisterPage() {
             {roles.map((role) => (
               <button
                 key={role.id}
+                type="button"
                 onClick={() => handleRoleSelect(role.id)}
                 className={cn(
                   "flex items-center gap-4 p-4 rounded-lg border-2 text-left transition-all hover:border-primary hover:bg-primary/5",

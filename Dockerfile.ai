@@ -1,0 +1,12 @@
+# FastAPI AI service — deploy as a separate Railway service; API/workers use AI_SERVICE_URL.
+FROM python:3.12-slim-bookworm
+
+WORKDIR /app
+
+COPY apps/ai-service/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY apps/ai-service/app ./app
+
+ENV PYTHONUNBUFFERED=1
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

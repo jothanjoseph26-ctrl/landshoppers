@@ -23,6 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { PortalPendingApiBanner } from "@/components/dashboard/portal-banner"
 
 const mockLeads = [
   {
@@ -145,7 +146,11 @@ export default function DeveloperLeadsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      <PortalPendingApiBanner
+        title="Developer leads use sample data"
+        description="Once developer-scoped inquiries land, this page will pull from the same /v1/inquiries pipeline as the agent inbox."
+      />
+
       <div>
         <h1 className="text-2xl font-bold">Lead Management</h1>
         <p className="text-muted-foreground">Track and manage buyer inquiries across all projects</p>

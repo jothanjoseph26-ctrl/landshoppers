@@ -9,6 +9,7 @@ import { savedListingsV1 } from "./me.saved-listings.js";
 import { savedSearchesV1 } from "./me.saved-searches.js";
 import { recentListingsV1 } from "./me.recent-listings.js";
 import { meInquiriesV1 } from "./me.inquiries.js";
+import { meRecommendationsV1 } from "./me.recommendations.js";
 
 export const meV1 = new Hono<ApiEnv>();
 
@@ -39,3 +40,4 @@ meV1.route("/saved-listings", savedListingsV1);
 meV1.route("/saved-searches", savedSearchesV1);
 meV1.route("/recent-listings", recentListingsV1);
 meV1.route("/inquiries", meInquiriesV1);
+meV1.route("/recommendations", meRecommendationsV1);

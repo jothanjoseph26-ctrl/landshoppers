@@ -9,13 +9,21 @@ import { healthRoutes } from "./routes/health.js";
 import { v1Routes } from "./routes/v1/index.js";
 import type { ApiEnv } from "./types/env.js";
 
+function corsOrigins(): string[] {
+  const raw = process.env["CORS_ORIGINS"];
+  if (raw?.trim()) {
+    return raw.split(",").map((s) => s.trim()).filter(Boolean);
+  }
+  return ["http://localhost:3000", "http://127.0.0.1:3000"];
+}
+
 export const app = new Hono<ApiEnv>();
 
 app.use("*", logger());
 app.use(
   "*",
   cors({
-    origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+    origin: corsOrigins(),
     allowHeaders: ["Authorization", "Content-Type"],
     exposeHeaders: [],
   }),
@@ -69,5 +77,5 @@ app.onError((err, c) => {
 });
 
 export function listen(port: number) {
-  return serve({ fetch: app.fetch, port });
+  return serve({ fetch: app.fetch, hostname: "0.0.0.0", port });
 }

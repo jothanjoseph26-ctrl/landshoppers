@@ -15,6 +15,17 @@ export const listingIdParamSchema = z.object({
   id: z.string().uuid(),
 });
 
+/** GET /v1/listings/by-slug/:slug — slug lookup for SEO-friendly web routes. */
+export const listingSlugParamSchema = z.object({
+  slug: z
+    .string()
+    .min(1)
+    .max(200)
+    .regex(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i, {
+      message: "Slug must be alphanumeric with optional hyphens",
+    }),
+});
+
 /** POST /v1/listings — draft listing + property (price in kobo as decimal string for JSON safety). */
 export const createListingBodySchema = z.object({
   title: z.string().min(3).max(200),
@@ -46,10 +57,16 @@ export const updateListingBodySchema = createListingBodySchema
     message: "At least one field is required",
   });
 
-/** POST /v1/listings/:id/status — explicit lifecycle transition. */
+/** POST /v1/listings/:id/status — explicit lifecycle transition (admin only). */
 export const updateListingStatusBodySchema = z.object({
   status: z.nativeEnum(ListingStatus),
 });
 
+/** POST /v1/listings/:id/reject — admin rejection requires a reason. */
+export const rejectListingBodySchema = z.object({
+  reason: z.string().min(3).max(2000),
+});
+
 export type UpdateListingBody = z.infer<typeof updateListingBodySchema>;
 export type UpdateListingStatusBody = z.infer<typeof updateListingStatusBodySchema>;
+export type RejectListingBody = z.infer<typeof rejectListingBodySchema>;

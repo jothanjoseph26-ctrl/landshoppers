@@ -20,7 +20,7 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> Settings:
-        port_raw = os.getenv("AI_SERVICE_PORT") or os.getenv("PORT") or "8000"
+        port_raw = os.getenv("PORT") or os.getenv("AI_SERVICE_PORT") or "8000"
         fixture = os.getenv("AI_FIXTURE_MODE", "true").lower() in ("1", "true", "yes")
         audit_db = os.getenv("AI_AUDIT_TO_DB", "").lower() in ("1", "true", "yes")
         rlm = int(os.getenv("AI_RATE_LIMIT_PER_MINUTE", "120"))

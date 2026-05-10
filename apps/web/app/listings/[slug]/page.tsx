@@ -24,6 +24,7 @@ import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ImageGallery } from '@/components/listings/image-gallery'
 import { InquiryForm } from '@/components/listings/inquiry-form'
+import { ListingMiniMap } from '@/components/listings/listing-mini-map'
 import { MortgageCalculator } from '@/components/listings/mortgage-calculator'
 import { PropertyCard } from '@/components/listings/property-card'
 import { Button } from '@/components/ui/button'
@@ -113,7 +114,7 @@ export default async function PropertyDetailPage({
   }
 
   const listing = mapApiListingToDetailView(row)
-  const similarRows = await fetchSimilarListings(row.id, 3)
+  const similarRows = await fetchSimilarListings(row.id, 6)
   const similarListings = similarRows.map(mapApiListingToCardProps)
 
   return (
@@ -373,41 +374,85 @@ export default async function PropertyDetailPage({
                     <CardHeader>
                       <CardTitle>Location</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="aspect-[16/9] overflow-hidden rounded-lg bg-muted">
-                        {/* Map placeholder - in production, use Mapbox GL JS */}
-                        <div className="flex h-full items-center justify-center">
-                          <div className="text-center">
-                            <MapPin className="mx-auto h-12 w-12 text-muted-foreground" />
-                            <p className="mt-2 text-sm text-muted-foreground">
-                              {listing.address}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {listing.city}, {listing.state}
-                            </p>
-                            <Button variant="outline" className="mt-4" asChild>
-                              <a
-                                href={`https://www.google.com/maps?q=${listing.latitude},${listing.longitude}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                View on Google Maps
-                              </a>
-                            </Button>
-                          </div>
-                        </div>
+                    <CardContent className="space-y-4">
+                      <ListingMiniMap
+                        latitude={listing.latitude}
+                        longitude={listing.longitude}
+                        title={listing.title}
+                      />
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                        <MapPin className="h-4 w-4" />
+                        <span>
+                          {listing.address}, {listing.city}, {listing.state}
+                        </span>
                       </div>
+                      <Button variant="outline" asChild>
+                        <a
+                          href={`https://www.google.com/maps?q=${listing.latitude},${listing.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Open in Google Maps
+                        </a>
+                      </Button>
                     </CardContent>
                   </Card>
                 </TabsContent>
               </Tabs>
 
               {/* Mortgage Calculator */}
-              <MortgageCalculator propertyPrice={listing.price} />
+                  <MortgageCalculator propertyPrice={listing.price} />
+
+                  {listing.priceHistory.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Price history</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="divide-y rounded-lg border">
+                          {listing.priceHistory.slice(0, 8).map((row) => (
+                            <div
+                              key={row.date}
+                              className="flex items-center justify-between px-3 py-2 text-sm"
+                            >
+                              <span className="text-muted-foreground">
+                                {formatDate(row.date)}
+                              </span>
+                              <span className="font-medium">{formatPrice(row.price)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
             </div>
 
-            {/* Right Column - Inquiry Form */}
-            <div>
+            {/* Right Column — sticky contact + trust signals */}
+            <div
+              id="contact"
+              className="space-y-6 lg:sticky lg:top-20 lg:self-start"
+            >
+              <Card className="border-teal-600/20 bg-teal-50/40 dark:bg-teal-950/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Shield className="h-5 w-5 text-teal-700" />
+                    Verification
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm text-muted-foreground">
+                  <p>
+                    This listing is published on LandShoppers with standard marketplace checks.
+                    Always verify title, payment instructions, and agency credentials before
+                    transferring funds.
+                  </p>
+                  {listing.isVerified && (
+                    <Badge variant="secondary" className="mt-2">
+                      Verified badge (UI)
+                    </Badge>
+                  )}
+                </CardContent>
+              </Card>
+
               <InquiryForm
                 listingId={listing.id}
                 listingTitle={listing.title}

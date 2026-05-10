@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Analytics } from '@vercel/analytics/next'
+
+import { SonnerToaster } from '@/components/ui/sonner-toaster'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -88,6 +90,7 @@ export default function RootLayout({
     <html lang="en" className="bg-background">
       <body className="font-sans antialiased min-h-screen">
         {children}
+        <SonnerToaster />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

@@ -9,19 +9,13 @@ export async function fetchListingBySlugOrId(
   slug: string,
 ): Promise<ApiListing | null> {
   try {
-    if (UUID_RE.test(slug)) {
-      const one = await apiFetchServer<ApiListResponse<ApiListing>>(
-        `/v1/listings/${slug}`,
-        { next: { revalidate: 30 } },
-      )
-      return one.data
-    }
-
-    const list = await apiFetchServer<ApiListResponse<ApiListing[]>>(
-      `/v1/listings?pageSize=500`,
-      { next: { revalidate: 30 } },
-    )
-    return list.data.find((row) => row.property.slug === slug) ?? null
+    const path = UUID_RE.test(slug)
+      ? `/v1/listings/${slug}`
+      : `/v1/listings/by-slug/${encodeURIComponent(slug)}`
+    const res = await apiFetchServer<ApiListResponse<ApiListing>>(path, {
+      next: { revalidate: 30 },
+    })
+    return res.data
   } catch (e) {
     if (e instanceof ApiRequestError && e.status === 404) {
       return null
@@ -45,15 +39,15 @@ export async function fetchFeaturedListings(limit: number): Promise<ApiListing[]
 }
 
 export async function fetchSimilarListings(
-  excludeId: string,
+  listingId: string,
   limit: number,
 ): Promise<ApiListing[]> {
   try {
     const res = await apiFetchServer<ApiListResponse<ApiListing[]>>(
-      `/v1/listings?pageSize=${limit + 8}&page=1`,
+      `/v1/listings/${listingId}/similar?limit=${limit}`,
       { next: { revalidate: 30 } },
     )
-    return (res.data ?? []).filter((r) => r.id !== excludeId).slice(0, limit)
+    return res.data ?? []
   } catch {
     return []
   }

@@ -61,3 +61,23 @@ export function requireRoles(...allowed: UserRole[]): MiddlewareHandler<ApiEnv> 
     await next();
   };
 }
+
+/** Role guard convenience wrappers for buyer/agent/developer/admin scopes. */
+export const requireBuyer = requireRoles(UserRole.buyer);
+export const requireAgent = requireRoles(UserRole.agent);
+export const requireDeveloper = requireRoles(UserRole.developer);
+export const requireAdmin = requireRoles(UserRole.admin, UserRole.super_admin);
+export const requireAgentOrDeveloper = requireRoles(
+  UserRole.agent,
+  UserRole.developer,
+);
+export const requireStaff = requireRoles(
+  UserRole.agent,
+  UserRole.developer,
+  UserRole.admin,
+  UserRole.super_admin,
+);
+
+export function isAdminRole(role: UserRole | string | undefined): boolean {
+  return role === UserRole.admin || role === UserRole.super_admin;
+}

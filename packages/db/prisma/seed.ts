@@ -269,6 +269,25 @@ async function main() {
     },
   });
 
+  await prisma.user.upsert({
+    where: { email: "admin@example.test" },
+    update: { passwordHash: SEED_PASSWORD_HASH },
+    create: {
+      email: "admin@example.test",
+      passwordHash: SEED_PASSWORD_HASH,
+      role: UserRole.admin,
+      isEmailVerified: true,
+      profile: {
+        create: {
+          firstName: "Site",
+          lastName: "Admin",
+          city: "Lagos",
+          state: "Lagos",
+        },
+      },
+    },
+  });
+
   const buyer = await prisma.user.upsert({
     where: { email: "buyer@example.test" },
     update: { passwordHash: SEED_PASSWORD_HASH },

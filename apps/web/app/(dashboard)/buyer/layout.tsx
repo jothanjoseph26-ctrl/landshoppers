@@ -1,6 +1,15 @@
 "use client"
 
-import { Calendar, Heart, Home, MessageSquare, Search, Settings, User } from "lucide-react"
+import {
+  Calendar,
+  Clock,
+  Heart,
+  Home,
+  MessageSquare,
+  Search,
+  Settings,
+  User,
+} from "lucide-react"
 
 import { PortalShell, type PortalNavItem } from "@/components/dashboard/portal-shell"
 
@@ -9,6 +18,7 @@ const navItems: PortalNavItem[] = [
   { title: "Saved Listings", href: "/buyer/saved", icon: Heart },
   { title: "Searches", href: "/buyer/searches", icon: Search },
   { title: "Inquiries", href: "/buyer/inquiries", icon: MessageSquare },
+  { title: "Recently viewed", href: "/buyer/recent", icon: Clock },
   { title: "Tours", href: "/buyer/tours", icon: Calendar },
   { title: "Profile", href: "/buyer/profile", icon: User },
   { title: "Settings", href: "/buyer/settings", icon: Settings },

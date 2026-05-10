@@ -39,6 +39,7 @@ export interface FilterState {
   minPrice: string
   maxPrice: string
   bedrooms: string
+  /** Minimum baths (UI filter; API uses minBaths when wired). */
   bathrooms: string
   amenities: string[]
   sortBy: string
@@ -88,6 +89,8 @@ const bedroomOptions = [
   { value: '4', label: '4+' },
   { value: '5', label: '5+' },
 ]
+
+const bathroomOptions = bedroomOptions
 
 const amenityOptions = [
   { value: 'pool', label: 'Swimming Pool' },
@@ -260,6 +263,22 @@ export function ListingFilters({
             </SelectContent>
           </Select>
 
+          <Select
+            value={filters.bathrooms}
+            onValueChange={(value) => updateFilter('bathrooms', value)}
+          >
+            <SelectTrigger className="h-10 w-[100px]">
+              <SelectValue placeholder="Baths" />
+            </SelectTrigger>
+            <SelectContent>
+              {bathroomOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value || 'any-bath'}>
+                  {option.label} Baths
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           {/* More Filters */}
           <Sheet>
             <SheetTrigger asChild>
@@ -384,6 +403,14 @@ export function ListingFilters({
               </button>
             </Badge>
           )}
+          {filters.bathrooms && (
+            <Badge variant="secondary" className="gap-1">
+              {filters.bathrooms}+ baths
+              <button type="button" onClick={() => updateFilter('bathrooms', '')}>
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
           {filters.amenities.map((amenity) => (
             <Badge key={amenity} variant="secondary" className="gap-1 capitalize">
               {amenity}
@@ -499,6 +526,25 @@ export function ListingFilters({
                     }
                     size="sm"
                     onClick={() => updateFilter('bedrooms', option.value)}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Bathrooms */}
+            <div>
+              <Label className="text-base font-medium">Bathrooms</Label>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {bathroomOptions.map((option) => (
+                  <Button
+                    key={option.value}
+                    variant={
+                      filters.bathrooms === option.value ? 'default' : 'outline'
+                    }
+                    size="sm"
+                    onClick={() => updateFilter('bathrooms', option.value)}
                   >
                     {option.label}
                   </Button>

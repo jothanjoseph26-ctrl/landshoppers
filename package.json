@@ -20,6 +20,7 @@
     "docker:down": "docker compose down",
     "workers:dev": "pnpm --filter @landshoppers/workers run dev",
     "workers:enqueue-smoke": "pnpm --filter @landshoppers/workers run enqueue-smoke",
+    "search:bootstrap": "pnpm --filter @landshoppers/api run search:bootstrap",
     "ai:test": "cd apps/ai-service && python -m pytest -q"
   },
   "devDependencies": {

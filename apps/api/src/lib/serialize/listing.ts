@@ -1,9 +1,13 @@
-import type { Listing, Property } from "@landshoppers/db";
+import type { Listing, ListingPriceHistory, Property } from "@landshoppers/db";
 
 export type ListingWithProperty = Listing & { property: Property };
 
+export type ListingWithPropertyAndMaybeHistory = ListingWithProperty & {
+  priceHistory?: ListingPriceHistory[];
+};
+
 /** JSON-safe listing shape (BigInt → string); PostGIS `geom` is not exposed. */
-export function listingToJson(row: ListingWithProperty) {
+export function listingToJson(row: ListingWithPropertyAndMaybeHistory) {
   const p = row.property;
   return {
     id: row.id,
@@ -26,8 +30,22 @@ export function listingToJson(row: ListingWithProperty) {
     expiresAt: row.expiresAt?.toISOString() ?? null,
     sourceType: row.sourceType,
     sourceMessageId: row.sourceMessageId,
+    submittedAt: row.submittedAt?.toISOString() ?? null,
+    approvedAt: row.approvedAt?.toISOString() ?? null,
+    approvedBy: row.approvedBy,
+    rejectedAt: row.rejectedAt?.toISOString() ?? null,
+    rejectedBy: row.rejectedBy,
+    rejectionReason: row.rejectionReason,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
+    ...(row.priceHistory !== undefined
+      ? {
+          priceHistory: row.priceHistory.map((h) => ({
+            changedAt: h.changedAt.toISOString(),
+            price: h.price.toString(),
+          })),
+        }
+      : {}),
     property: {
       id: p.id,
       title: p.title,

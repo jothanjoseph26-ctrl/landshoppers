@@ -12,6 +12,7 @@ import {
   Briefcase,
   FileText,
   Phone,
+  Map,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,6 +26,7 @@ import { cn } from '@/lib/utils'
 const navigation = [
   { name: 'Buy', href: '/listings?type=sale', icon: Home },
   { name: 'Rent', href: '/listings?type=rent', icon: Building2 },
+  { name: 'Map', href: '/map-search', icon: Map },
   { name: 'Agents', href: '/agents', icon: Users },
   { name: 'Developers', href: '/developers', icon: Briefcase },
   { name: 'Services', href: '/services', icon: Briefcase },
