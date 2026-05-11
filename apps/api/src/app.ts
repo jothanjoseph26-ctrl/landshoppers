@@ -10,10 +10,17 @@ import { v1Routes } from "./routes/v1/index.js";
 import type { ApiEnv } from "./types/env.js";
 
 function corsOrigins(): string[] {
-  const raw = process.env["CORS_ORIGINS"];
-  if (raw?.trim()) {
-    return raw.split(",").map((s) => s.trim()).filter(Boolean);
+  const configured = [
+    ...(process.env["CORS_ORIGINS"]?.split(",") ?? []),
+    process.env["NEXT_PUBLIC_APP_URL"],
+  ]
+    .map((s) => s?.trim().replace(/\/$/, ""))
+    .filter((s): s is string => Boolean(s));
+
+  if (configured.length > 0) {
+    return [...new Set(configured)];
   }
+
   return ["http://localhost:3000", "http://127.0.0.1:3000"];
 }
 
