@@ -28,11 +28,7 @@ export async function FeaturedListings() {
               Featured Properties
             </h2>
             <p className="mt-2 text-muted-foreground">
-              Pulled live from the API when{' '}
-              <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                @landshoppers/api
-              </code>{' '}
-              is running
+              Verified homes, land, and investment opportunities across Nigeria
             </p>
           </div>
           <Button variant="outline" asChild>
@@ -45,15 +41,8 @@ export async function FeaturedListings() {
 
         {listings.length === 0 ? (
           <div className="mt-10 rounded-xl border border-dashed bg-muted/30 px-6 py-12 text-center text-muted-foreground">
-            <p>No listings returned yet.</p>
-            <p className="mt-2 text-sm">
-              Run Postgres, migrate/seed, start the API on{' '}
-              <code className="rounded bg-muted px-1 text-xs">
-                NEXT_PUBLIC_API_URL
-              </code>{' '}
-              (default <code className="rounded bg-muted px-1 text-xs">http://localhost:4001</code>
-              ), then refresh.
-            </p>
+            <p>Featured listings are being prepared.</p>
+            <p className="mt-2 text-sm">Check back shortly for verified properties.</p>
           </div>
         ) : (
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
