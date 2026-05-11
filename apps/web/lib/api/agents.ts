@@ -9,7 +9,7 @@ export async function fetchAgentsList(query: {
 }): Promise<ApiListResponse<ApiAgentSummary[]> | null> {
   const params = new URLSearchParams()
   params.set("page", String(query.page ?? 1))
-  params.set("pageSize", String(query.pageSize ?? 100))
+  params.set("pageSize", String(query.pageSize ?? 50))
   if (query.city) params.set("city", query.city)
   if (query.q) params.set("q", query.q)
   try {

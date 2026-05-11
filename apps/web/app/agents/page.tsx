@@ -85,7 +85,7 @@ export default function AgentsPage() {
       try {
         const params = new URLSearchParams()
         params.set('page', '1')
-        params.set('pageSize', '100')
+        params.set('pageSize', '50')
         if (debouncedQ) params.set('q', debouncedQ)
         if (selectedCity !== 'All Cities') params.set('city', selectedCity)
         const res = await apiFetch<ApiListResponse<ApiAgentSummary[]>>(

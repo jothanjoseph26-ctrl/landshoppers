@@ -91,7 +91,7 @@ export default function RootLayout({
       <body className="font-sans antialiased min-h-screen">
         {children}
         <SonnerToaster />
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        {process.env.VERCEL === '1' && <Analytics />}
       </body>
     </html>
   )
