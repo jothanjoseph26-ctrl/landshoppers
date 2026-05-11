@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "node ../../scripts/python-module.mjs uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
-    "start": "node ../../scripts/python-module.mjs uvicorn app.main:app --host 0.0.0.0 --port 8000",
+    "start": "node ./scripts/with-pythonpath.mjs node ../../scripts/python-module.mjs uvicorn app.main:app --host 0.0.0.0 --port 8000",
     "lint": "node ../../scripts/python-module.mjs compileall -q app",
+    "prebuild": "node ../../scripts/python-module.mjs pip install --upgrade --target .python-packages -r requirements.txt",
     "build": "node ../../scripts/python-module.mjs compileall -q app",
     "test": "node ../../scripts/python-module.mjs pytest -q",
     "schemas:export": "node ../../scripts/python-module.mjs app.scripts.export_schemas"
