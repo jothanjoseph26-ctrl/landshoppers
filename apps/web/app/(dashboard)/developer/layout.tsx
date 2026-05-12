@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { logoutAccount } from "@/lib/api/auth"
 import { clearAuthSession } from "@/lib/api/auth-session"
+import { BrandLogo } from "@/components/layout/brand-logo"
 
 const sidebarNavItems = [
   { title: "Dashboard", href: "/developer", icon: Home },
@@ -54,10 +55,7 @@ export default function DeveloperLayout({
         <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
           {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </Button>
-        <Link href="/" className="flex items-center gap-2">
-          <Home className="h-6 w-6 text-primary" />
-          <span className="font-bold">LandShoppers</span>
-        </Link>
+        <BrandLogo />
         <div className="flex-1" />
         <Button variant="ghost" size="icon">
           <Bell className="h-5 w-5" />
@@ -77,10 +75,7 @@ export default function DeveloperLayout({
           <div className="flex h-full flex-col">
             {/* Logo */}
             <div className="flex h-16 items-center gap-2 border-b px-6">
-              <Link href="/" className="flex items-center gap-2">
-                <Home className="h-6 w-6 text-primary" />
-                <span className="font-bold text-xl">LandShoppers</span>
-              </Link>
+              <BrandLogo />
             </div>
 
             {/* Company Badge */}

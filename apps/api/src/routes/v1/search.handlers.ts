@@ -1,4 +1,4 @@
-import { ListingStatus, Prisma } from "@landshoppers/db";
+import { ListingStatus } from "@landshoppers/db";
 import type { Context } from "hono";
 
 import { offsetFromPage } from "../../contracts/common.js";
@@ -53,27 +53,6 @@ async function hydrateListingsOrdered(hitIds: string[]): Promise<ListingWithProp
   });
   const byId = new Map(rows.map((r) => [r.id, r]));
   return hitIds.map((id) => byId.get(id)).filter(Boolean) as ListingWithProperty[];
-}
-
-function mapFilterSql(filters: {
-  minPrice?: bigint | undefined;
-  maxPrice?: bigint | undefined;
-  propertyType?: string | undefined;
-  listingType?: "sale" | "rent" | "both" | undefined;
-}): Prisma.Sql {
-  const clauses: Prisma.Sql[] = [];
-  if (filters.minPrice !== undefined) clauses.push(Prisma.sql`l.price >= ${filters.minPrice}`);
-  if (filters.maxPrice !== undefined) clauses.push(Prisma.sql`l.price <= ${filters.maxPrice}`);
-  if (filters.propertyType !== undefined) {
-    clauses.push(Prisma.sql`p.property_type::text = ${filters.propertyType}`);
-  }
-  if (filters.listingType === "sale") clauses.push(Prisma.sql`l.is_for_sale = true`);
-  if (filters.listingType === "rent") clauses.push(Prisma.sql`l.is_for_rent = true`);
-  if (filters.listingType === "both") {
-    clauses.push(Prisma.sql`(l.is_for_sale = true AND l.is_for_rent = true)`);
-  }
-
-  return clauses.length > 0 ? Prisma.sql`AND ${Prisma.join(clauses, " AND ")}` : Prisma.sql``;
 }
 
 export async function handleListingsSearch(c: Context<ApiEnv>, q: ListingsSearchQuery): Promise<Response> {
@@ -246,84 +225,61 @@ export async function handleMapSearch(c: Context<ApiEnv>, q: MapSearchQuery): Pr
     listingType,
   } = q;
   const skip = offsetFromPage(page, pageSize);
-  const extra = mapFilterSql({ minPrice, maxPrice, propertyType, listingType });
-
-  type Row = {
-    id: string;
-    lng: number;
-    lat: number;
-    price: bigint;
-    title: string;
-    slug: string;
-    property_type: string;
+  const baseWhere = {
+    deletedAt: null,
+    status: ListingStatus.active,
+    ...(minPrice !== undefined ? { price: { gte: minPrice } } : {}),
+    ...(maxPrice !== undefined ? { price: { lte: maxPrice } } : {}),
+    ...(minPrice !== undefined && maxPrice !== undefined
+      ? { price: { gte: minPrice, lte: maxPrice } }
+      : {}),
+    ...(listingType === "sale" ? { isForSale: true } : {}),
+    ...(listingType === "rent" ? { isForRent: true } : {}),
+    ...(listingType === "both" ? { isForSale: true, isForRent: true } : {}),
   };
 
-  let rowsRaw: Row[];
+  const propertyFilter = {
+    deletedAt: null,
+    latitude: { not: null, gte: minLat, lte: maxLat },
+    longitude: { not: null, gte: minLng, lte: maxLng },
+    ...(propertyType !== undefined ? { propertyType } : {}),
+  };
+
+  let rows = await prisma.listing.findMany({
+    where: {
+      ...baseWhere,
+      property: propertyFilter,
+    },
+    include: { property: true },
+    orderBy: { createdAt: "desc" },
+    skip: radiusKm !== undefined ? 0 : skip,
+    take: radiusKm !== undefined ? Math.min(skip + pageSize + 250, 500) : pageSize,
+  });
 
   if (radiusKm !== undefined && centerLat !== undefined && centerLng !== undefined) {
-    const radiusMeters = Math.round(radiusKm * 1000);
-    rowsRaw = await prisma.$queryRaw<Row[]>`
-      SELECT l.id AS id,
-             ST_X(p.geom::geometry)::float AS lng,
-             ST_Y(p.geom::geometry)::float AS lat,
-             l.price AS price,
-             p.title AS title,
-             p.slug AS slug,
-             p.property_type::text AS property_type
-      FROM listings l
-      INNER JOIN properties p ON p.id = l.property_id
-      WHERE l.deleted_at IS NULL
-        AND l.status = 'active'::"ListingStatus"
-        AND p.deleted_at IS NULL
-        AND p.geom IS NOT NULL
-        AND ST_DWithin(
-          p.geom::geography,
-          ST_SetSRID(ST_MakePoint(${centerLng}, ${centerLat}), 4326)::geography,
-          ${radiusMeters}
-        )
-        ${extra}
-      ORDER BY l.created_at DESC
-      LIMIT ${pageSize} OFFSET ${skip}
-    `;
-  } else {
-    rowsRaw = await prisma.$queryRaw<Row[]>`
-      SELECT l.id AS id,
-             ST_X(p.geom::geometry)::float AS lng,
-             ST_Y(p.geom::geometry)::float AS lat,
-             l.price AS price,
-             p.title AS title,
-             p.slug AS slug,
-             p.property_type::text AS property_type
-      FROM listings l
-      INNER JOIN properties p ON p.id = l.property_id
-      WHERE l.deleted_at IS NULL
-        AND l.status = 'active'::"ListingStatus"
-        AND p.deleted_at IS NULL
-        AND p.geom IS NOT NULL
-        AND ST_Intersects(
-          p.geom::geometry,
-          ST_MakeEnvelope(${minLng}, ${minLat}, ${maxLng}, ${maxLat}, 4326)::geometry
-        )
-        ${extra}
-      ORDER BY l.created_at DESC
-      LIMIT ${pageSize} OFFSET ${skip}
-    `;
+    rows = rows
+      .filter((row) => {
+        const lat = row.property.latitude;
+        const lng = row.property.longitude;
+        return lat !== null && lng !== null && distanceKm(centerLat, centerLng, lat, lng) <= radiusKm;
+      })
+      .slice(skip, skip + pageSize);
   }
 
   const geojson = {
     type: "FeatureCollection" as const,
-    features: rowsRaw.map((r) => ({
+    features: rows.map((row) => ({
       type: "Feature" as const,
       geometry: {
         type: "Point" as const,
-        coordinates: [r.lng, r.lat],
+        coordinates: [row.property.longitude, row.property.latitude],
       },
       properties: {
-        id: r.id,
-        price: r.price.toString(),
-        title: r.title,
-        slug: r.slug,
-        propertyType: r.property_type,
+        id: row.id,
+        price: row.price.toString(),
+        title: row.property.title,
+        slug: row.property.slug,
+        propertyType: row.property.propertyType,
       },
     })),
   };
@@ -333,12 +289,23 @@ export async function handleMapSearch(c: Context<ApiEnv>, q: MapSearchQuery): Pr
     meta: {
       page,
       pageSize,
-      totalInPage: rowsRaw.length,
+      totalInPage: rows.length,
       clusterReady: true,
       mode:
-        radiusKm !== undefined ? ("postgres_geo_radius_clust" as const) : ("postgres_geo_bbox_clust" as const),
+        radiusKm !== undefined ? ("postgres_latlng_radius" as const) : ("postgres_latlng_bbox" as const),
     },
   });
+}
+
+function distanceKm(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const r = 6371;
+  const dLat = toRad(bLat - aLat);
+  const dLng = toRad(bLng - aLng);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * r * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
 }
 
 export async function handleAutocomplete(c: Context<ApiEnv>, query: AutocompleteQuery): Promise<Response> {

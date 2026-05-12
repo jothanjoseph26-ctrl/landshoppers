@@ -3,9 +3,10 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
-import { Bell, Home, LogOut, Menu, X } from "lucide-react"
+import { Bell, LogOut, Menu, X } from "lucide-react"
 import { useState } from "react"
 
+import { BrandLogo } from "@/components/layout/brand-logo"
 import { logoutAccount } from "@/lib/api/auth"
 import { clearAuthSession } from "@/lib/api/auth-session"
 import { cn } from "@/lib/utils"
@@ -41,10 +42,7 @@ export function PortalShell({
         <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
           {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </Button>
-        <Link href="/" className="flex items-center gap-2">
-          <Home className="h-6 w-6 text-primary" />
-          <span className="font-bold">LandShoppers</span>
-        </Link>
+        <BrandLogo />
         <div className="flex-1" />
         <Button variant="ghost" size="icon">
           <Bell className="h-5 w-5" />
@@ -60,10 +58,7 @@ export function PortalShell({
         >
           <div className="flex h-full flex-col">
             <div className="flex h-16 items-center gap-2 border-b px-6">
-              <Link href="/" className="flex items-center gap-2">
-                <Home className="h-6 w-6 text-primary" />
-                <span className="text-xl font-bold">LandShoppers</span>
-              </Link>
+              <BrandLogo />
             </div>
 
             <div className="border-b p-4">

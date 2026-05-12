@@ -1,7 +1,6 @@
 "use client"
 
-import Link from "next/link"
-import { Home } from "lucide-react"
+import { BrandLogo } from "@/components/layout/brand-logo"
 
 export default function AuthLayout({
   children,
@@ -19,10 +18,7 @@ export default function AuthLayout({
           <div className="absolute top-1/2 left-1/3 w-48 h-48 border border-primary-foreground/20 rounded-full" />
         </div>
         <div className="relative z-10 flex flex-col justify-between p-12 text-primary-foreground">
-          <Link href="/" className="flex items-center gap-2">
-            <Home className="h-8 w-8" />
-            <span className="text-2xl font-bold">LandShoppers</span>
-          </Link>
+          <BrandLogo className="w-fit rounded-md bg-white px-3 py-2" imageClassName="h-9" />
           <div className="space-y-6">
             <h1 className="text-4xl font-bold leading-tight text-balance">
               Find Your Perfect Property in Nigeria
@@ -56,10 +52,7 @@ export default function AuthLayout({
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="lg:hidden mb-8 text-center">
-            <Link href="/" className="inline-flex items-center gap-2">
-              <Home className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold text-foreground">LandShoppers</span>
-            </Link>
+            <BrandLogo className="justify-center" imageClassName="h-10" />
           </div>
           {children}
         </div>

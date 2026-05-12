@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
 import {
@@ -22,6 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { BrandLogo } from '@/components/layout/brand-logo'
 import { cn } from '@/lib/utils'
 
 const navigation = [
@@ -47,16 +47,7 @@ export function Header() {
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
         {/* Logo */}
         <div className="flex lg:flex-1">
-          <Link href="/" className="-m-1.5 p-1.5 flex items-center gap-2">
-            <Image
-              src="/landshoppers-logo.png"
-              alt="LandShoppers"
-              width={180}
-              height={40}
-              className="h-8 w-auto"
-              priority
-            />
-          </Link>
+          <BrandLogo className="-m-1.5 p-1.5" priority />
         </div>
 
         {/* Mobile menu button */}
@@ -124,15 +115,7 @@ export function Header() {
         />
         <div className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-[#1A1A1A] px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-white/10">
           <div className="flex items-center justify-between">
-            <Link href="/" className="-m-1.5 p-1.5 flex items-center gap-2">
-              <Image
-                src="/landshoppers-logo.png"
-                alt="LandShoppers"
-                width={180}
-                height={40}
-                className="h-8 w-auto"
-              />
-            </Link>
+            <BrandLogo className="-m-1.5 p-1.5" />
             <button
               type="button"
               className="-m-2.5 rounded-md p-2.5 text-white"
