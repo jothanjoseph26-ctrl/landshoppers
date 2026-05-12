@@ -105,7 +105,7 @@ const mockProjects = [
 
 const statusColors: Record<string, string> = {
   UPCOMING: "bg-blue-100 text-blue-800",
-  ONGOING: "bg-green-100 text-green-800",
+  ONGOING: "bg-primary/10 text-primary",
   COMPLETED: "bg-gray-100 text-gray-800",
   SOLD_OUT: "bg-purple-100 text-purple-800",
 }

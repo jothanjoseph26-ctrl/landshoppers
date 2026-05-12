@@ -320,7 +320,7 @@ export function ListingDiscoveryInner() {
                           tabIndex={0}
                           className={cn(
                             'cursor-pointer rounded-xl outline-none transition-shadow',
-                            active && 'ring-2 ring-teal-600 ring-offset-2 ring-offset-background',
+                            active && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
                           )}
                           onClick={() => setSelectedId(c.id)}
                           onKeyDown={(e) => {

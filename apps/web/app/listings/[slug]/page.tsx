@@ -432,10 +432,10 @@ export default async function PropertyDetailPage({
               id="contact"
               className="space-y-6 lg:sticky lg:top-20 lg:self-start"
             >
-              <Card className="border-teal-600/20 bg-teal-50/40 dark:bg-teal-950/20">
+              <Card className="border-primary/20 bg-primary/5 dark:bg-primary/10">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
-                    <Shield className="h-5 w-5 text-teal-700" />
+                    <Shield className="h-5 w-5 text-primary" />
                     Verification
                   </CardTitle>
                 </CardHeader>

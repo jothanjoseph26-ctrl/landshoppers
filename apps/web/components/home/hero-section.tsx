@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, MapPin, Home, Building2, LandPlot, ChevronDown } from 'lucide-react'
@@ -47,14 +48,30 @@ export function HeroSection() {
   const selectedType = propertyTypes.find((t) => t.value === propertyType)
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5">
-      {/* Background pattern */}
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNiIgc3Ryb2tlPSJyZ2JhKDQ1LDEwNiw3OSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9nPjwvc3ZnPg==')] opacity-40" />
+    <section className="relative isolate min-h-[min(92vh,760px)] overflow-hidden bg-[#1A1A1A]">
+      {/* Hero image */}
+      <Image
+        src="/hero.jpg"
+        alt="Premium homes and properties"
+        fill
+        priority
+        className="object-cover object-center"
+        sizes="100vw"
+      />
+      {/* Readability overlay — charcoal + orange tint aligned with brand */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#1A1A1A]/85 via-[#1A1A1A]/55 to-[#1A1A1A]/75"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-primary/25 via-transparent to-transparent"
+        aria-hidden
+      />
 
-      <div className="relative mx-auto max-w-7xl px-4 py-20 lg:px-8 lg:py-32">
+      <div className="relative mx-auto max-w-7xl px-4 py-16 lg:px-8 lg:py-24">
         <div className="mx-auto max-w-3xl text-center">
           {/* Badge */}
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
@@ -63,13 +80,13 @@ export function HeroSection() {
           </div>
 
           {/* Headline */}
-          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl text-balance">
+          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl text-balance drop-shadow-sm">
             Find Your Dream Property in{' '}
             <span className="text-primary">Nigeria</span>
           </h1>
 
           {/* Subheadline */}
-          <p className="mt-6 text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto text-pretty">
+          <p className="mt-6 max-w-2xl mx-auto text-lg leading-relaxed text-white/85 text-pretty">
             Discover thousands of verified listings from trusted agents and developers.
             Whether you&apos;re buying, renting, or investing, we&apos;ve got you covered.
           </p>
@@ -154,12 +171,13 @@ export function HeroSection() {
 
               {/* Popular Cities */}
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                <span className="text-sm text-muted-foreground">Popular:</span>
+                <span className="text-sm text-white/70">Popular:</span>
                 {popularCities.map((city) => (
                   <button
                     key={city}
                     onClick={() => setLocation(city)}
-                    className="rounded-full bg-muted px-3 py-1 text-sm font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                    type="button"
+                    className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-sm font-medium text-white/90 backdrop-blur-sm transition-colors hover:border-primary/40 hover:bg-primary/20 hover:text-white"
                   >
                     {city}
                   </button>
@@ -177,8 +195,10 @@ export function HeroSection() {
               { value: '50K+', label: 'Happy Clients' },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
-                <div className="text-3xl font-bold text-primary">{stat.value}</div>
-                <div className="mt-1 text-sm text-muted-foreground">{stat.label}</div>
+                <div className="text-3xl font-bold text-primary drop-shadow-sm">
+                  {stat.value}
+                </div>
+                <div className="mt-1 text-sm text-white/70">{stat.label}</div>
               </div>
             ))}
           </div>

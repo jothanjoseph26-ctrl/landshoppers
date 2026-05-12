@@ -37,7 +37,7 @@ export function MarketListingsStat() {
           <div className="rounded-lg bg-blue-100 p-2">
             <Building2 className="h-5 w-5 text-blue-600" />
           </div>
-          <div className="flex items-center gap-1 text-sm text-green-600">
+          <div className="flex items-center gap-1 text-sm text-primary">
             API
             <ArrowUpRight className="h-4 w-4" />
           </div>

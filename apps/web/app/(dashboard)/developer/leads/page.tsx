@@ -114,10 +114,10 @@ const mockLeads = [
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof CheckCircle }> = {
   new: { label: "New", color: "bg-blue-100 text-blue-800", icon: Clock },
-  contacted: { label: "Contacted", color: "bg-yellow-100 text-yellow-800", icon: Phone },
+  contacted: { label: "Contacted", color: "bg-muted text-foreground", icon: Phone },
   touring: { label: "Site Visit", color: "bg-purple-100 text-purple-800", icon: Calendar },
   negotiating: { label: "Negotiating", color: "bg-orange-100 text-orange-800", icon: MessageSquare },
-  closed: { label: "Closed Won", color: "bg-green-100 text-green-800", icon: CheckCircle },
+  closed: { label: "Closed Won", color: "bg-primary/10 text-primary", icon: CheckCircle },
   lost: { label: "Lost", color: "bg-gray-100 text-gray-800", icon: XCircle },
 }
 

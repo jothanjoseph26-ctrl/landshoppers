@@ -28,8 +28,8 @@ const stats = [
     change: "+24",
     trend: "up",
     icon: Home,
-    color: "text-green-600",
-    bgColor: "bg-green-100",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
   },
   {
     title: "Active Inquiries",
@@ -116,15 +116,15 @@ const recentLeads = [
 
 const statusColors: Record<string, string> = {
   UPCOMING: "bg-blue-100 text-blue-800",
-  ONGOING: "bg-green-100 text-green-800",
+  ONGOING: "bg-primary/10 text-primary",
   COMPLETED: "bg-gray-100 text-gray-800",
   SOLD_OUT: "bg-purple-100 text-purple-800",
 }
 
 const leadStatusColors: Record<string, string> = {
   new: "bg-blue-100 text-blue-800",
-  contacted: "bg-yellow-100 text-yellow-800",
-  touring: "bg-green-100 text-green-800",
+  contacted: "bg-muted text-foreground",
+  touring: "bg-primary/10 text-primary",
   closed: "bg-gray-100 text-gray-800",
 }
 
@@ -162,7 +162,7 @@ export default function DeveloperDashboard() {
                   <stat.icon className={`h-5 w-5 ${stat.color}`} />
                 </div>
                 <div className={`flex items-center gap-1 text-sm ${
-                  stat.trend === "up" ? "text-green-600" : "text-red-600"
+                  stat.trend === "up" ? "text-primary" : "text-red-600"
                 }`}>
                   {stat.change}
                   {stat.trend === "up" ? (
