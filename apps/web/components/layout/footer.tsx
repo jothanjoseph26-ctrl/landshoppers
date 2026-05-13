@@ -56,9 +56,9 @@ export function Footer() {
                 <Phone className="h-4 w-4" />
                 +234 901 234 5678
               </a>
-              <a href="mailto:hello@landshopper.com" className="flex items-center gap-2 text-sm text-background/70 hover:text-background transition-colors">
+              <a href="mailto:hello@landshoppersrealty.com" className="flex items-center gap-2 text-sm text-background/70 hover:text-background transition-colors">
                 <Mail className="h-4 w-4" />
-                hello@landshopper.com
+                hello@landshoppersrealty.com
               </a>
               <p className="flex items-center gap-2 text-sm text-background/70">
                 <MapPin className="h-4 w-4" />

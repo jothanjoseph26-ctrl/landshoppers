@@ -24,11 +24,11 @@ export const metadata: Metadata = {
   authors: [{ name: 'LandShoppers' }],
   creator: 'LandShoppers',
   publisher: 'LandShoppers',
-  metadataBase: new URL('https://landshopper.com'),
+  metadataBase: new URL('https://landshoppersrealty.com'),
   openGraph: {
     type: 'website',
     locale: 'en_NG',
-    url: 'https://landshopper.com',
+    url: 'https://landshoppersrealty.com',
     siteName: 'LandShoppers',
     title: 'LandShoppers - Nigeria\'s Premier Real Estate Marketplace',
     description:
