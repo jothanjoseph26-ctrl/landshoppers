@@ -66,6 +66,7 @@ export function requireRoles(...allowed: UserRole[]): MiddlewareHandler<ApiEnv> 
 export const requireBuyer = requireRoles(UserRole.buyer);
 export const requireAgent = requireRoles(UserRole.agent);
 export const requireDeveloper = requireRoles(UserRole.developer);
+export const requireServiceProvider = requireRoles(UserRole.service_provider);
 export const requireAdmin = requireRoles(UserRole.admin, UserRole.super_admin);
 export const requireAgentOrDeveloper = requireRoles(
   UserRole.agent,
@@ -78,6 +79,35 @@ export const requireStaff = requireRoles(
   UserRole.super_admin,
 );
 
-export function isAdminRole(role: UserRole | string | undefined): boolean {
+export function isAdminRole(role: UserRole): boolean {
   return role === UserRole.admin || role === UserRole.super_admin;
 }
+
+/**
+ * Attach `authUser` when `Authorization` has a valid access JWT; ignore invalid/expired tokens
+ * so the same route stays public-compatible (e.g. ServiceHub quotes).
+ */
+export const optionalAttachAuthUser: MiddlewareHandler<ApiEnv> = async (c, next) => {
+  const bearerToken = extractBearer(c.req.header("Authorization"));
+  if (!bearerToken) {
+    await next();
+    return;
+  }
+  try {
+    const claims = await verifyAccessToken(bearerToken);
+    const role = claims.role as UserRole;
+    if (!Object.values(UserRole).includes(role)) {
+      await next();
+      return;
+    }
+    c.set("bearerToken", bearerToken);
+    c.set("authUser", {
+      id: claims.sub,
+      email: claims.email,
+      role,
+    });
+  } catch {
+    /* leave authUser unset */
+  }
+  await next();
+};

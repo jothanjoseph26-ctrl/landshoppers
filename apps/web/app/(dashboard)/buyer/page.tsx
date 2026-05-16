@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowRight, Calendar, Clock, Heart, MessageSquare, Search } from "lucide-react"
+import { ArrowRight, Briefcase, Calendar, Clock, Heart, MessageSquare, Search } from "lucide-react"
 
+import { BuyerServiceHubPanel } from "@/components/servicehub/dashboard-servicehub-widgets"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -109,6 +110,8 @@ export default function BuyerDashboardPage() {
         ))}
       </div>
 
+      <BuyerServiceHubPanel />
+
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -205,9 +208,10 @@ export default function BuyerDashboardPage() {
           <CardTitle>Next actions</CardTitle>
           <CardDescription>Common entry points for buyers.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-3">
+        <CardContent className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
           <ActionTile href="/listings" title="Browse listings" description="Find active properties in the marketplace." />
           <ActionTile href="/agents" title="Find agents" description="Contact verified professionals." />
+          <ActionTile href="/buyer/services" title="Property services" description="ServiceHub quotes, bundles, and specialists." icon={Briefcase} />
           <ActionTile href="/buyer/tours" title="Schedule a tour" description="Book in-person or virtual visits." icon={Calendar} />
         </CardContent>
       </Card>

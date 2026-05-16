@@ -17,6 +17,7 @@
     "@landshoppers/contracts": "workspace:*",
     "@landshoppers/db": "workspace:*",
     "@landshoppers/search-listing": "workspace:*",
+    "@landshoppers/servicehub-match": "workspace:*",
     "@landshoppers/workers": "workspace:*",
     "@opensearch-project/opensearch": "^2.11.0",
     "@hono/node-server": "^1.19.7",

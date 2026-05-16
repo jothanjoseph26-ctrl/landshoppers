@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { whatsappWebhookBodySchema } from "../../contracts/whatsapp.js";
 import { ApiError } from "../../lib/errors.js";
 import { enqueueWhatsAppExtraction } from "../../lib/jobs/enqueue-whatsapp-extraction.js";
+import { enqueueServicehubWhatsAppLead } from "../../lib/jobs/enqueue-servicehub-whatsapp-lead.js";
 import { prisma } from "../../lib/prisma.js";
 import { verifyWebhookSignature } from "../../lib/whatsapp-signature.js";
 import type { ApiEnv } from "../../types/env.js";
@@ -58,6 +59,19 @@ whatsappPublicV1.post("/webhook", async (c) => {
     groupId: body.groupId,
     groupName: body.groupName,
   });
+
+  if (process.env["SERVICEHUB_WHATSAPP_AUTO_LEAD"] === "true") {
+    await enqueueServicehubWhatsAppLead({
+      rawMessageId: row.id,
+      messageId: body.messageId,
+      textContent: body.textContent,
+      mediaUrls: body.mediaUrls ?? [],
+      senderPhone: body.senderPhone,
+      senderName: body.senderName,
+      groupId: body.groupId,
+      groupName: body.groupName,
+    });
+  }
 
   return c.json(
     {

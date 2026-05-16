@@ -22,6 +22,7 @@ import { hashRefreshToken } from "../../lib/refresh-token.js";
 import { prisma } from "../../lib/prisma.js";
 import { meToJson } from "../../lib/serialize/me.js";
 import { requireAuth } from "../../middleware/auth.js";
+import { slugifyUnique } from "../../lib/slug.js";
 import { issueSessionTokens } from "../../services/auth-tokens.js";
 import type { ApiEnv } from "../../types/env.js";
 
@@ -103,6 +104,28 @@ authV1.post("/register", registerRateLimit, zValidator("json", registerBodySchem
                   body.companyName?.trim() ||
                   body.email.split("@")[0] ||
                   "Developer",
+              },
+            },
+          }
+        : {}),
+      ...(role === UserRole.service_provider
+        ? {
+            serviceProvider: {
+              create: {
+                businessName:
+                  body.providerBusinessName?.trim() ||
+                  body.email.split("@")[0] ||
+                  "Service provider",
+                slug: slugifyUnique(
+                  body.providerBusinessName?.trim() ||
+                    body.email.split("@")[0] ||
+                    "service-provider",
+                ),
+                category: body.providerCategory!,
+                city: body.providerCity!.trim(),
+                state: body.providerState!.trim(),
+                phone: body.phone ?? undefined,
+                email: body.email,
               },
             },
           }

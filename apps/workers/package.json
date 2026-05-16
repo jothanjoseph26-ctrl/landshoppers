@@ -18,6 +18,7 @@
   "dependencies": {
     "@landshoppers/db": "workspace:*",
     "@landshoppers/search-listing": "workspace:*",
+    "@landshoppers/servicehub-match": "workspace:*",
     "@opensearch-project/opensearch": "^2.11.0",
     "bullmq": "^5.34.5",
     "dotenv": "^16.6.1",

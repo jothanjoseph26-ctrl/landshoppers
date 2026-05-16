@@ -27,13 +27,16 @@ async function main(): Promise<void> {
   const connection = createRedis();
   const queues = createQueues(connection);
 
-  const [w, s] = await Promise.all([
+  const [w, s, m] = await Promise.all([
     queues.whatsappExtraction.add("smoke-extract", extractPayload),
     queues.seoGeneration.add("smoke-seo", seoPayload),
+    queues.providerMatchScore.add("smoke-provider-match-score", {
+      trigger: "scheduled_full_refresh",
+    }),
   ]);
 
   console.log(
-    `[enqueue-smoke] enqueued whatsapp job ${w.id}, seo job ${s.id} — run workers + AI service to process.`,
+    `[enqueue-smoke] enqueued whatsapp ${w.id}, seo ${s.id}, provider-match-score ${m.id} — run workers + AI service where applicable.`,
   );
 
   await connection.quit();

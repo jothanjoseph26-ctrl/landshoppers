@@ -1,3 +1,4 @@
+import { refreshAccessTokenSingleFlight } from "./auth-refresh"
 import { authAuthorizationHeader } from "./auth-session"
 import { getPublicApiBaseUrl } from "./config"
 import type { ApiErrorBody } from "./types"
@@ -26,25 +27,45 @@ export async function apiFetch<T>(
   const base = getPublicApiBaseUrl()
   const url = path.startsWith("http") ? path : `${base}${path.startsWith("/") ? "" : "/"}${path}`
 
-  const headers = new Headers(rest.headers)
-  if (jsonBody !== undefined && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json")
+  const buildHeaders = () => {
+    const headers = new Headers(rest.headers)
+    if (jsonBody !== undefined && !headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json")
+    }
+    if (useAuth) {
+      const extra = authAuthorizationHeader()
+      for (const [k, v] of Object.entries(extra)) {
+        headers.set(k, v)
+      }
+    }
+    return headers
   }
-  if (useAuth) {
-    const extra = authAuthorizationHeader()
-    for (const [k, v] of Object.entries(extra)) {
-      headers.set(k, v)
+
+  const request = () =>
+    fetch(url, {
+      ...rest,
+      headers: buildHeaders(),
+      body: jsonBody !== undefined ? JSON.stringify(jsonBody) : undefined,
+    })
+
+  let res = await request()
+  let text = await res.text()
+  let json: unknown = null
+  try {
+    json = text ? (JSON.parse(text) as unknown) : null
+  } catch {
+    json = null
+  }
+
+  if (!res.ok && useAuth && res.status === 401 && (await refreshAccessTokenSingleFlight())) {
+    res = await request()
+    text = await res.text()
+    try {
+      json = text ? (JSON.parse(text) as unknown) : null
+    } catch {
+      json = null
     }
   }
-
-  const res = await fetch(url, {
-    ...rest,
-    headers,
-    body: jsonBody !== undefined ? JSON.stringify(jsonBody) : undefined,
-  })
-
-  const text = await res.text()
-  const json = text ? (JSON.parse(text) as unknown) : null
 
   if (!res.ok) {
     throw new ApiRequestError(res.status, json)

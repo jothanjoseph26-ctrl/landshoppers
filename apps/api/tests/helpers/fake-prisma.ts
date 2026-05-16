@@ -46,13 +46,18 @@ type AgentRow = {
   id: string;
   userId: string;
   agencyName: string | null;
+  licenseNumber: string | null;
   isVerified: boolean;
+  kycStatus: string;
+  bvnHash: string | null;
+  verificationBadge: boolean;
   specializations: string[];
   rating: number;
   reviewCount: number;
   totalListings: number;
   totalSales: number;
   yearsOfExperience: number | null;
+  commissionEarned: bigint;
   socialLinks: Json | null;
   deletedAt: Date | null;
   createdAt: Date;
@@ -62,7 +67,18 @@ type DeveloperRow = {
   id: string;
   userId: string;
   companyName: string;
+  rcNumber: string | null;
+  companyAddress: string | null;
+  companyCity: string | null;
+  companyState: string | null;
+  companyPhone: string | null;
+  companyEmail: string | null;
+  companyWebsite: string | null;
+  description: string | null;
   isVerified: boolean;
+  kycStatus: string;
+  createdAt: Date;
+  updatedAt: Date;
   deletedAt: Date | null;
 };
 
@@ -71,6 +87,39 @@ type ServiceProviderRow = {
   userId: string;
   businessName: string;
   slug: string;
+  category: string;
+  description: string | null;
+  /** Prisma JSON — spec §2.2; tests often use string[] */
+  servicesOffered: Json;
+  address: string | null;
+  city: string;
+  state: string;
+  country: string;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  logoUrl: string | null;
+  galleryImages: string[];
+  rating: number;
+  reviewCount: number;
+  isVerified: boolean;
+  verificationLevel: string;
+  subscriptionTier: string;
+  viewCount: number;
+  leadCount: number;
+  subCategories: string[];
+  serviceAreas: string[];
+  completedJobCount: number;
+  responseRatePercent: number;
+  aiMatchScore: number;
+  isFeatured: boolean;
+  featuredUntil: Date | null;
+  whatsappPhone: string | null;
+  portfolioItems: Json;
+  socialLinks: Json | null;
+  deletedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 type PropertyRow = {
@@ -145,6 +194,25 @@ type RecentViewRow = {
   lastViewedAt: Date;
 };
 
+type TourRequestRow = {
+  id: string;
+  listingId: string;
+  buyerId: string;
+  agentId: string | null;
+  tourType: string;
+  status: string;
+  preferredDate: Date;
+  preferredTime: string | null;
+  confirmedDate: Date | null;
+  notes: string | null;
+  buyerPhone: string | null;
+  completedAt: Date | null;
+  cancelledAt: Date | null;
+  cancelReason: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 type SavedSearchRow = {
   id: string;
   userId: string;
@@ -176,6 +244,17 @@ type InquiryRow = {
   updatedAt: Date;
 };
 
+type MessageRow = {
+  id: string;
+  threadId: string;
+  senderId: string;
+  receiverId: string;
+  content: string;
+  isRead: boolean;
+  readAt: Date | null;
+  createdAt: Date;
+};
+
 type ListingPriceHistoryRow = {
   id: string;
   listingId: string;
@@ -188,11 +267,152 @@ type DeveloperProjectRow = {
   developerId: string;
   name: string;
   slug: string;
+  description: string | null;
+  shortDescription: string | null;
   status: string;
+  propertyType: string;
+  address: string | null;
   city: string;
   state: string;
+  country: string;
+  latitude: number | null;
+  longitude: number | null;
+  priceRangeMin: bigint | null;
+  priceRangeMax: bigint | null;
+  totalUnits: number;
+  availableUnits: number;
+  soldUnits: number;
+  amenities: string[];
+  features: string[];
+  images: string[];
+  floorPlans: string[];
+  brochureUrl: string | null;
+  virtualTourUrl: string | null;
+  completionDate: Date | null;
+  launchDate: Date | null;
+  isFeatured: boolean;
+  viewCount: number;
   inquiryCount: number;
+  createdAt: Date;
+  updatedAt: Date;
   deletedAt: Date | null;
+};
+
+type BulkUploadJobRow = {
+  id: string;
+  developerId: string;
+  projectId: string;
+  filename: string;
+  status: string;
+  errorMessage: string | null;
+  headers: Json;
+  parsedGrid: Json;
+  columnMap: Json | null;
+  commitMode: string | null;
+  committedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type BulkUploadStagingRow = {
+  id: string;
+  uploadId: string;
+  rowIndex: number;
+  payload: Json;
+  errors: string[];
+  warnings: string[];
+};
+
+type ProjectUnitRow = {
+  id: string;
+  projectId: string;
+  unitName: string;
+  unitType: string;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  toilets: number | null;
+  squareMeters: number | null;
+  price: bigint;
+  status: string;
+  floorPlan: string | null;
+  features: string[];
+  reservedAt: Date | null;
+  soldAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type DeveloperKycDocumentRow = {
+  id: string;
+  developerId: string;
+  projectId: string | null;
+  documentType: string;
+  status: string;
+  title: string | null;
+  fileName: string;
+  mimeType: string;
+  byteSize: number;
+  storageKey: string | null;
+  externalUrl: string;
+  rejectionReason: string | null;
+  expiresAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type DeveloperMembershipRow = {
+  id: string;
+  developerId: string;
+  userId: string;
+  role: string;
+  isDisabled: boolean;
+  projectIds: string[];
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type DeveloperInviteRow = {
+  id: string;
+  developerId: string;
+  email: string;
+  role: string;
+  projectIds: string[];
+  tokenHash: string;
+  expiresAt: Date;
+  revokedAt: Date | null;
+  createdByUserId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type SubscriptionRow = {
+  id: string;
+  agentId: string | null;
+  developerId: string | null;
+  plan: string;
+  status: string;
+  paystackSubCode: string | null;
+  paystackCustomerId: string | null;
+  currentPeriodStart: Date;
+  currentPeriodEnd: Date;
+  cancelledAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type AuditLogRow = {
+  id: string;
+  actorId: string | null;
+  actorEmail: string | null;
+  actorRole: string | null;
+  action: string;
+  targetType: string | null;
+  targetId: string | null;
+  changes: Json | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  metadata: Json | null;
+  createdAt: Date;
 };
 
 type RawWhatsAppMessageRow = {
@@ -244,6 +464,94 @@ type ListingSeoVariantRow = {
   updatedAt: Date;
 };
 
+type ServiceLeadRow = {
+  id: string;
+  serviceProviderId: string;
+  clientUserId: string | null;
+  clientName: string;
+  clientPhone: string;
+  clientEmail: string | null;
+  source: string;
+  listingId: string | null;
+  projectId: string | null;
+  bundleId: string | null;
+  serviceRequested: string;
+  message: string;
+  budget: bigint | null;
+  timeline: string | null;
+  location: string;
+  status: string;
+  aiScore: number | null;
+  aiSummary: string | null;
+  quotedAmountKobo: bigint | null;
+  finalAmountKobo: bigint | null;
+  respondedAt: Date | null;
+  completedAt: Date | null;
+  createdAt: Date;
+};
+
+type ServiceReviewRow = {
+  id: string;
+  serviceLeadId: string;
+  serviceProviderId: string;
+  reviewerId: string;
+  overallRating: number;
+  qualityRating: number;
+  communicationRating: number;
+  timelinessRating: number;
+  valueRating: number;
+  title: string;
+  body: string;
+  isJobVerified: boolean;
+  providerResponse: string | null;
+  createdAt: Date;
+};
+
+type NotificationRow = {
+  id: string;
+  userId: string;
+  type: string;
+  title: string;
+  body: string | null;
+  metadata: Json | null;
+  readAt: Date | null;
+  createdAt: Date;
+};
+
+type ProviderAvailabilityRow = {
+  id: string;
+  serviceProviderId: string;
+  date: Date;
+  isAvailable: boolean;
+  slots: Json | null;
+  note: string | null;
+};
+
+type ServiceBundleRow = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  categories: string[];
+  priceFromKobo: bigint;
+  priceToKobo: bigint;
+  triggerContext: string;
+  isActive: boolean;
+  activationCount: number;
+};
+
+type BundleActivationRow = {
+  id: string;
+  bundleId: string;
+  clientUserId: string;
+  listingId: string | null;
+  status: string;
+  matchedProviders: Json;
+  totalAmountKobo: bigint | null;
+  platformFeeKobo: bigint | null;
+  createdAt: Date;
+};
+
 type Tables = {
   users: UserRow[];
   profiles: ProfileRow[];
@@ -254,12 +562,28 @@ type Tables = {
   listings: ListingRow[];
   savedListings: SavedListingRow[];
   recentViews: RecentViewRow[];
+  tourRequests: TourRequestRow[];
   savedSearches: SavedSearchRow[];
   inquiries: InquiryRow[];
+  messages: MessageRow[];
   listingPriceHistory: ListingPriceHistoryRow[];
   developerProjects: DeveloperProjectRow[];
+  developerBulkUploads: BulkUploadJobRow[];
+  developerBulkUploadRows: BulkUploadStagingRow[];
+  projectUnits: ProjectUnitRow[];
+  developerKycDocuments: DeveloperKycDocumentRow[];
+  developerMemberships: DeveloperMembershipRow[];
+  developerInvites: DeveloperInviteRow[];
+  subscriptions: SubscriptionRow[];
+  auditLogs: AuditLogRow[];
   rawWhatsAppMessages: RawWhatsAppMessageRow[];
   listingSeoVariants: ListingSeoVariantRow[];
+  serviceLeads: ServiceLeadRow[];
+  serviceReviews: ServiceReviewRow[];
+  notifications: NotificationRow[];
+  providerAvailability: ProviderAvailabilityRow[];
+  serviceBundles: ServiceBundleRow[];
+  bundleActivations: BundleActivationRow[];
 };
 
 const tables: Tables = createEmptyTables();
@@ -275,12 +599,28 @@ function createEmptyTables(): Tables {
     listings: [],
     savedListings: [],
     recentViews: [],
+    tourRequests: [],
     savedSearches: [],
     inquiries: [],
+    messages: [],
     listingPriceHistory: [],
     developerProjects: [],
+    developerBulkUploads: [],
+    developerBulkUploadRows: [],
+    projectUnits: [],
+    developerKycDocuments: [],
+    developerMemberships: [],
+    developerInvites: [],
+    subscriptions: [],
+    auditLogs: [],
     rawWhatsAppMessages: [],
     listingSeoVariants: [],
+    serviceLeads: [],
+    serviceReviews: [],
+    notifications: [],
+    providerAvailability: [],
+    serviceBundles: [],
+    bundleActivations: [],
   };
 }
 
@@ -319,6 +659,13 @@ function valueMatches(field: unknown, predicate: unknown): boolean {
   for (const [op, val] of Object.entries(ops)) {
     switch (op) {
       case "equals":
+        if (Array.isArray(field) && Array.isArray(val)) {
+          if (field.length !== val.length) return false;
+          for (let i = 0; i < field.length; i++) {
+            if (field[i] !== val[i]) return false;
+          }
+          break;
+        }
         if (field !== val) return false;
         break;
       case "not":
@@ -338,6 +685,10 @@ function valueMatches(field: unknown, predicate: unknown): boolean {
           return false;
         break;
       case "gte":
+        if (field instanceof Date && val instanceof Date) {
+          if (!(field.getTime() >= val.getTime())) return false;
+          break;
+        }
         if (
           typeof field === "bigint" || typeof val === "bigint"
             ? !(BigInt(field as bigint) >= BigInt(val as bigint))
@@ -346,10 +697,38 @@ function valueMatches(field: unknown, predicate: unknown): boolean {
           return false;
         break;
       case "lte":
+        if (field instanceof Date && val instanceof Date) {
+          if (!(field.getTime() <= val.getTime())) return false;
+          break;
+        }
         if (
           typeof field === "bigint" || typeof val === "bigint"
             ? !(BigInt(field as bigint) <= BigInt(val as bigint))
             : !((field as number) <= (val as number))
+        )
+          return false;
+        break;
+      case "gt":
+        if (field instanceof Date && val instanceof Date) {
+          if (!(field.getTime() > val.getTime())) return false;
+          break;
+        }
+        if (
+          typeof field === "bigint" || typeof val === "bigint"
+            ? !(BigInt(field as bigint) > BigInt(val as bigint))
+            : !((field as number) > (val as number))
+        )
+          return false;
+        break;
+      case "lt":
+        if (field instanceof Date && val instanceof Date) {
+          if (!(field.getTime() < val.getTime())) return false;
+          break;
+        }
+        if (
+          typeof field === "bigint" || typeof val === "bigint"
+            ? !(BigInt(field as bigint) < BigInt(val as bigint))
+            : !((field as number) < (val as number))
         )
           return false;
         break;
@@ -393,6 +772,8 @@ function rowMatches(row: Record<string, unknown>, where: Where): boolean {
         "contains",
         "gte",
         "lte",
+        "gt",
+        "lt",
         "mode",
       ]);
       const isOperator = Object.keys(obj).every((k) => operatorKeys.has(k));
@@ -486,6 +867,22 @@ function attachIncludes<T extends Record<string, unknown>>(
       out.listing = l ? attachIncludes(l, "listings", sub) : null;
     }
   }
+  if (table === "tourRequests") {
+    if (include.listing) {
+      const l = tables.listings.find((r) => r.id === out["listingId"]);
+      const sub =
+        include.listing === true ? undefined : (include.listing as { include?: IncludeSpec }).include;
+      out.listing = l ? attachIncludes(l, "listings", sub) : null;
+    }
+    if (include.buyer) {
+      const u = tables.users.find((r) => r.id === out["buyerId"]);
+      const sub =
+        include.buyer === true
+          ? ({ profile: true } as IncludeSpec)
+          : ((include.buyer as { include?: IncludeSpec }).include ?? { profile: true });
+      out.buyer = u ? attachIncludes(u, "users", sub) : null;
+    }
+  }
   if (table === "inquiries") {
     if (include.listing) {
       const l = tables.listings.find((r) => r.id === out["listingId"]);
@@ -495,6 +892,30 @@ function attachIncludes<T extends Record<string, unknown>>(
     if (include.agent) {
       const a = tables.agents.find((r) => r.id === out["agentId"]);
       out.agent = a ? clone(a) : null;
+    }
+    if (include.project) {
+      const proj = tables.developerProjects.find((r) => r.id === out["projectId"]);
+      out.project = proj ? clone(proj) : null;
+    }
+  }
+  if (table === "developerKycDocuments") {
+    if (include.project) {
+      const proj = tables.developerProjects.find((r) => r.id === out["projectId"]);
+      out.project = proj ? { id: proj.id, name: proj.name, slug: proj.slug } : null;
+    }
+  }
+  if (table === "developerMemberships") {
+    if (include.user) {
+      const u = tables.users.find((r) => r.id === out["userId"]);
+      const sub =
+        include.user === true ? ({ profile: true } as IncludeSpec) : (include.user as { include?: IncludeSpec }).include;
+      out.user = u ? (attachIncludes(u, "users", sub) as unknown) : null;
+    }
+  }
+  if (table === "developers") {
+    if (include.user) {
+      const u = tables.users.find((r) => r.id === out["userId"]);
+      out.user = u ? clone(u) : null;
     }
   }
   return out;
@@ -530,12 +951,34 @@ function buildModel<TRow extends Record<string, unknown>>(
   uniqueKeys?: string[][],
 ) {
   return {
-    findFirst: async (args?: { where?: Where; include?: IncludeSpec }) => {
-      const rows = (tables[table] as unknown as TRow[]).filter((r) =>
+    findFirst: async (args?: {
+      where?: Where;
+      include?: IncludeSpec;
+      orderBy?: Parameters<typeof orderBy>[1];
+    }) => {
+      let rows = (tables[table] as unknown as TRow[]).filter((r) =>
         rowMatches(r, args?.where),
       );
       if (rows.length === 0) return null;
-      const row = rows[0]!;
+      const ordered = (
+        args?.orderBy ? orderBy(rows as Record<string, unknown>[], args.orderBy) : rows
+      ) as TRow[];
+      const row = ordered[0]!;
+      return attachIncludes(row, table, args?.include);
+    },
+    findFirstOrThrow: async (args?: {
+      where?: Where;
+      include?: IncludeSpec;
+      orderBy?: Parameters<typeof orderBy>[1];
+    }) => {
+      let rows = (tables[table] as unknown as TRow[]).filter((r) =>
+        rowMatches(r, args?.where),
+      );
+      if (rows.length === 0) throw new Error(`Record not found in ${String(table)}`);
+      const ordered = (
+        args?.orderBy ? orderBy(rows as Record<string, unknown>[], args.orderBy) : rows
+      ) as TRow[];
+      const row = ordered[0]!;
       return attachIncludes(row, table, args?.include);
     },
     findUnique: async (args: { where: Record<string, unknown>; include?: IncludeSpec }) => {
@@ -713,13 +1156,18 @@ userModel.create = async ({ data, include }: { data: Record<string, unknown>; in
       id: randomUUID(),
       userId: user.id,
       agencyName: (a.agencyName as string | null) ?? null,
+      licenseNumber: (a.licenseNumber as string | null) ?? null,
       isVerified: Boolean(a.isVerified),
+      kycStatus: (a.kycStatus as string) ?? "pending",
+      bvnHash: (a.bvnHash as string | null) ?? null,
+      verificationBadge: Boolean(a.verificationBadge),
       specializations: (a.specializations as string[] | undefined) ?? [],
       rating: 0,
       reviewCount: 0,
       totalListings: 0,
       totalSales: 0,
       yearsOfExperience: null,
+      commissionEarned: (a.commissionEarned as bigint | undefined) ?? 0n,
       socialLinks: null,
       deletedAt: null,
       createdAt: new Date(),
@@ -727,21 +1175,66 @@ userModel.create = async ({ data, include }: { data: Record<string, unknown>; in
   }
   if (developer && typeof developer === "object") {
     const d = (developer as { create?: Record<string, unknown> }).create ?? {};
+    const now = new Date();
     tables.developers.push({
       id: randomUUID(),
       userId: user.id,
       companyName: (d.companyName as string) ?? "",
+      rcNumber: null,
+      companyAddress: null,
+      companyCity: null,
+      companyState: null,
+      companyPhone: null,
+      companyEmail: null,
+      companyWebsite: null,
+      description: null,
       isVerified: false,
+      kycStatus: "pending",
+      createdAt: now,
+      updatedAt: now,
       deletedAt: null,
     });
   }
   if (serviceProvider && typeof serviceProvider === "object") {
     const s = (serviceProvider as { create?: Record<string, unknown> }).create ?? {};
+    const now = new Date();
     tables.serviceProviders.push({
       id: randomUUID(),
       userId: user.id,
       businessName: (s.businessName as string) ?? "",
       slug: (s.slug as string) ?? randomUUID(),
+      category: (s.category as string) ?? "legal",
+      description: (s.description as string | null) ?? null,
+      servicesOffered: (s.servicesOffered as Json | undefined) ?? [],
+      address: (s.address as string | null) ?? null,
+      city: (s.city as string) ?? "Lagos",
+      state: (s.state as string) ?? "Lagos",
+      country: (s.country as string) ?? "Nigeria",
+      phone: (s.phone as string | null) ?? null,
+      email: (s.email as string | null) ?? null,
+      website: (s.website as string | null) ?? null,
+      logoUrl: (s.logoUrl as string | null) ?? null,
+      galleryImages: (s.galleryImages as string[] | undefined) ?? [],
+      rating: (s.rating as number | undefined) ?? 0,
+      reviewCount: (s.reviewCount as number | undefined) ?? 0,
+      isVerified: Boolean(s.isVerified),
+      verificationLevel: (s.verificationLevel as string) ?? "basic",
+      subscriptionTier: (s.subscriptionTier as string) ?? "free",
+      viewCount: (s.viewCount as number | undefined) ?? 0,
+      leadCount: (s.leadCount as number | undefined) ?? 0,
+      subCategories: (s.subCategories as string[] | undefined) ?? [],
+      serviceAreas: (s.serviceAreas as string[] | undefined) ?? [],
+      completedJobCount: (s.completedJobCount as number | undefined) ?? 0,
+      responseRatePercent: (s.responseRatePercent as number | undefined) ?? 0,
+      aiMatchScore: (s.aiMatchScore as number | undefined) ?? 0,
+      isFeatured: Boolean(s.isFeatured),
+      featuredUntil: (s.featuredUntil as Date | null) ?? null,
+      whatsappPhone: (s.whatsappPhone as string | null) ?? null,
+      portfolioItems: (s.portfolioItems as Json | undefined) ?? [],
+      socialLinks: (s.socialLinks as Json | null) ?? null,
+      deletedAt: null,
+      createdAt: now,
+      updatedAt: now,
     });
   }
   return attachIncludes(user, "users", include);
@@ -831,6 +1324,30 @@ const recentViewModel = buildModel<RecentViewRow>(
   [["userId", "listingId"]],
 );
 
+const tourRequestModel = buildModel<TourRequestRow>(
+  "tourRequests",
+  (data) => {
+    const now = new Date();
+    return {
+      id: (data["id"] as string) ?? randomUUID(),
+      listingId: data["listingId"] as string,
+      buyerId: data["buyerId"] as string,
+      agentId: (data["agentId"] as string | null) ?? null,
+      tourType: (data["tourType"] as string) ?? "in_person",
+      status: (data["status"] as string) ?? "pending",
+      preferredDate: (data["preferredDate"] as Date | undefined) ?? now,
+      preferredTime: (data["preferredTime"] as string | null) ?? null,
+      confirmedDate: (data["confirmedDate"] as Date | null) ?? null,
+      notes: (data["notes"] as string | null) ?? null,
+      buyerPhone: (data["buyerPhone"] as string | null) ?? null,
+      completedAt: (data["completedAt"] as Date | null) ?? null,
+      cancelledAt: (data["cancelledAt"] as Date | null) ?? null,
+      cancelReason: (data["cancelReason"] as string | null) ?? null,
+      ...nowDates(),
+    };
+  },
+);
+
 const savedSearchModel = buildModel<SavedSearchRow>(
   "savedSearches",
   (data) => ({
@@ -866,6 +1383,23 @@ const inquiryModel = buildModel<InquiryRow>(
   }),
 );
 
+const messageModel = buildModel<MessageRow>(
+  "messages",
+  (data) => {
+    const now = new Date();
+    return {
+      id: (data["id"] as string) ?? randomUUID(),
+      threadId: data["threadId"] as string,
+      senderId: data["senderId"] as string,
+      receiverId: data["receiverId"] as string,
+      content: (data["content"] as string) ?? "",
+      isRead: Boolean(data["isRead"]),
+      readAt: (data["readAt"] as Date | null) ?? null,
+      createdAt: (data["createdAt"] as Date | undefined) ?? now,
+    };
+  },
+);
+
 const listingPriceHistoryModel = buildModel<ListingPriceHistoryRow>(
   "listingPriceHistory",
   (data) => ({
@@ -878,16 +1412,206 @@ const listingPriceHistoryModel = buildModel<ListingPriceHistoryRow>(
 
 const developerProjectModel = buildModel<DeveloperProjectRow>(
   "developerProjects",
+  (data) => {
+    const now = new Date();
+    return {
+      id: (data["id"] as string) ?? randomUUID(),
+      developerId: data["developerId"] as string,
+      name: data["name"] as string,
+      slug: (data["slug"] as string) ?? randomUUID(),
+      description: (data["description"] as string | null) ?? null,
+      shortDescription: (data["shortDescription"] as string | null) ?? null,
+      status: (data["status"] as string) ?? "UPCOMING",
+      propertyType: (data["propertyType"] as string) ?? "estate_unit",
+      address: (data["address"] as string | null) ?? null,
+      city: data["city"] as string,
+      state: data["state"] as string,
+      country: (data["country"] as string) ?? "Nigeria",
+      latitude: (data["latitude"] as number | null) ?? null,
+      longitude: (data["longitude"] as number | null) ?? null,
+      priceRangeMin: (data["priceRangeMin"] as bigint | null) ?? null,
+      priceRangeMax: (data["priceRangeMax"] as bigint | null) ?? null,
+      totalUnits: (data["totalUnits"] as number) ?? 0,
+      availableUnits: (data["availableUnits"] as number) ?? 0,
+      soldUnits: (data["soldUnits"] as number) ?? 0,
+      amenities: (data["amenities"] as string[]) ?? [],
+      features: (data["features"] as string[]) ?? [],
+      images: (data["images"] as string[]) ?? [],
+      floorPlans: (data["floorPlans"] as string[]) ?? [],
+      brochureUrl: (data["brochureUrl"] as string | null) ?? null,
+      virtualTourUrl: (data["virtualTourUrl"] as string | null) ?? null,
+      completionDate: (data["completionDate"] as Date | null) ?? null,
+      launchDate: (data["launchDate"] as Date | null) ?? null,
+      isFeatured: Boolean(data["isFeatured"]),
+      viewCount: (data["viewCount"] as number) ?? 0,
+      inquiryCount: (data["inquiryCount"] as number) ?? 0,
+      createdAt: (data["createdAt"] as Date | undefined) ?? now,
+      updatedAt: (data["updatedAt"] as Date | undefined) ?? now,
+      deletedAt: (data["deletedAt"] as Date | null) ?? null,
+    };
+  },
+);
+
+const developerBulkUploadModel = buildModel<BulkUploadJobRow>(
+  "developerBulkUploads",
+  (data) => {
+    const now = new Date();
+    return {
+      id: (data["id"] as string) ?? randomUUID(),
+      developerId: data["developerId"] as string,
+      projectId: data["projectId"] as string,
+      filename: (data["filename"] as string) ?? "upload.csv",
+      status: (data["status"] as string) ?? "mapping",
+      errorMessage: (data["errorMessage"] as string | null) ?? null,
+      headers: (data["headers"] as Json) ?? [],
+      parsedGrid: (data["parsedGrid"] as Json) ?? [],
+      columnMap: (data["columnMap"] as Json | null) ?? null,
+      commitMode: (data["commitMode"] as string | null) ?? null,
+      committedAt: (data["committedAt"] as Date | null) ?? null,
+      createdAt: (data["createdAt"] as Date | undefined) ?? now,
+      updatedAt: (data["updatedAt"] as Date | undefined) ?? now,
+    };
+  },
+);
+
+const developerBulkUploadRowModel = buildModel<BulkUploadStagingRow>(
+  "developerBulkUploadRows",
   (data) => ({
     id: (data["id"] as string) ?? randomUUID(),
-    developerId: data["developerId"] as string,
-    name: data["name"] as string,
-    slug: data["slug"] as string,
-    status: (data["status"] as string) ?? "ONGOING",
-    city: data["city"] as string,
-    state: data["state"] as string,
-    inquiryCount: 0,
-    deletedAt: null,
+    uploadId: data["uploadId"] as string,
+    rowIndex: data["rowIndex"] as number,
+    payload: (data["payload"] as Json) ?? {},
+    errors: (data["errors"] as string[]) ?? [],
+    warnings: (data["warnings"] as string[]) ?? [],
+  }),
+  [["uploadId", "rowIndex"]],
+);
+
+const projectUnitModel = buildModel<ProjectUnitRow>(
+  "projectUnits",
+  (data) => {
+    const now = new Date();
+    return {
+      id: (data["id"] as string) ?? randomUUID(),
+      projectId: data["projectId"] as string,
+      unitName: data["unitName"] as string,
+      unitType: (data["unitType"] as string) ?? "Plot",
+      bedrooms: (data["bedrooms"] as number | null) ?? null,
+      bathrooms: (data["bathrooms"] as number | null) ?? null,
+      toilets: (data["toilets"] as number | null) ?? null,
+      squareMeters: (data["squareMeters"] as number | null) ?? null,
+      price: data["price"] as bigint,
+      status: (data["status"] as string) ?? "available",
+      floorPlan: (data["floorPlan"] as string | null) ?? null,
+      features: (data["features"] as string[]) ?? [],
+      reservedAt: (data["reservedAt"] as Date | null) ?? null,
+      soldAt: (data["soldAt"] as Date | null) ?? null,
+      createdAt: now,
+      updatedAt: now,
+    };
+  },
+);
+
+const developerKycDocumentModel = buildModel<DeveloperKycDocumentRow>(
+  "developerKycDocuments",
+  (data) => {
+    const now = new Date();
+    return {
+      id: (data["id"] as string) ?? randomUUID(),
+      developerId: data["developerId"] as string,
+      projectId: (data["projectId"] as string | null) ?? null,
+      documentType: (data["documentType"] as string) ?? "other",
+      status: (data["status"] as string) ?? "pending",
+      title: (data["title"] as string | null) ?? null,
+      fileName: (data["fileName"] as string) ?? "document.pdf",
+      mimeType: (data["mimeType"] as string) ?? "application/pdf",
+      byteSize: (data["byteSize"] as number) ?? 0,
+      storageKey: (data["storageKey"] as string | null) ?? null,
+      externalUrl: (data["externalUrl"] as string) ?? "https://example.com/doc.pdf",
+      rejectionReason: (data["rejectionReason"] as string | null) ?? null,
+      expiresAt: (data["expiresAt"] as Date | null) ?? null,
+      createdAt: (data["createdAt"] as Date | undefined) ?? now,
+      updatedAt: (data["updatedAt"] as Date | undefined) ?? now,
+    };
+  },
+);
+
+const developerMembershipModel = buildModel<DeveloperMembershipRow>(
+  "developerMemberships",
+  (data) => {
+    const now = new Date();
+    return {
+      id: (data["id"] as string) ?? randomUUID(),
+      developerId: data["developerId"] as string,
+      userId: data["userId"] as string,
+      role: (data["role"] as string) ?? "viewer",
+      isDisabled: Boolean(data["isDisabled"]),
+      projectIds: (data["projectIds"] as string[] | undefined) ?? [],
+      createdAt: (data["createdAt"] as Date | undefined) ?? now,
+      updatedAt: (data["updatedAt"] as Date | undefined) ?? now,
+    };
+  },
+  [["developerId", "userId"]],
+);
+
+const developerInviteModel = buildModel<DeveloperInviteRow>(
+  "developerInvites",
+  (data) => {
+    const now = new Date();
+    return {
+      id: (data["id"] as string) ?? randomUUID(),
+      developerId: data["developerId"] as string,
+      email: (data["email"] as string).toLowerCase(),
+      role: (data["role"] as string) ?? "viewer",
+      projectIds: (data["projectIds"] as string[] | undefined) ?? [],
+      tokenHash: data["tokenHash"] as string,
+      expiresAt: data["expiresAt"] as Date,
+      revokedAt: (data["revokedAt"] as Date | null) ?? null,
+      createdByUserId: (data["createdByUserId"] as string | null) ?? null,
+      createdAt: (data["createdAt"] as Date | undefined) ?? now,
+      updatedAt: (data["updatedAt"] as Date | undefined) ?? now,
+    };
+  },
+);
+
+const subscriptionModel = buildModel<SubscriptionRow>(
+  "subscriptions",
+  (data) => {
+    const now = new Date();
+    const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    return {
+      id: (data["id"] as string) ?? randomUUID(),
+      agentId: (data["agentId"] as string | null) ?? null,
+      developerId: (data["developerId"] as string | null) ?? null,
+      plan: (data["plan"] as string) ?? "developer_basic",
+      status: (data["status"] as string) ?? "active",
+      paystackSubCode: (data["paystackSubCode"] as string | null) ?? null,
+      paystackCustomerId: (data["paystackCustomerId"] as string | null) ?? null,
+      currentPeriodStart: (data["currentPeriodStart"] as Date | undefined) ?? now,
+      currentPeriodEnd: (data["currentPeriodEnd"] as Date | undefined) ?? end,
+      cancelledAt: (data["cancelledAt"] as Date | null) ?? null,
+      createdAt: (data["createdAt"] as Date | undefined) ?? now,
+      updatedAt: (data["updatedAt"] as Date | undefined) ?? now,
+    };
+  },
+  [["developerId"], ["agentId"]],
+);
+
+const auditLogModel = buildModel<AuditLogRow>(
+  "auditLogs",
+  (data) => ({
+    id: (data["id"] as string) ?? randomUUID(),
+    actorId: (data["actorId"] as string | null) ?? null,
+    actorEmail: (data["actorEmail"] as string | null) ?? null,
+    actorRole: (data["actorRole"] as string | null) ?? null,
+    action: data["action"] as string,
+    targetType: (data["targetType"] as string | null) ?? null,
+    targetId: (data["targetId"] as string | null) ?? null,
+    changes: (data["changes"] as Json | null) ?? null,
+    ipAddress: (data["ipAddress"] as string | null) ?? null,
+    userAgent: (data["userAgent"] as string | null) ?? null,
+    metadata: (data["metadata"] as Json | null) ?? null,
+    createdAt: (data["createdAt"] as Date | undefined) ?? new Date(),
   }),
 );
 
@@ -952,13 +1676,18 @@ const agentModel = buildModel<AgentRow>(
     id: (data["id"] as string) ?? randomUUID(),
     userId: data["userId"] as string,
     agencyName: (data["agencyName"] as string | null) ?? null,
+    licenseNumber: (data["licenseNumber"] as string | null) ?? null,
     isVerified: Boolean(data["isVerified"]),
+    kycStatus: (data["kycStatus"] as string) ?? "pending",
+    bvnHash: (data["bvnHash"] as string | null) ?? null,
+    verificationBadge: Boolean(data["verificationBadge"]),
     specializations: (data["specializations"] as string[] | undefined) ?? [],
     rating: 0,
     reviewCount: 0,
     totalListings: 0,
     totalSales: 0,
     yearsOfExperience: null,
+    commissionEarned: (data["commissionEarned"] as bigint | undefined) ?? 0n,
     socialLinks: null,
     deletedAt: null,
     createdAt: new Date(),
@@ -967,46 +1696,325 @@ const agentModel = buildModel<AgentRow>(
 
 const developerModel = buildModel<DeveloperRow>(
   "developers",
-  (data) => ({
-    id: (data["id"] as string) ?? randomUUID(),
-    userId: data["userId"] as string,
-    companyName: data["companyName"] as string,
-    isVerified: Boolean(data["isVerified"]),
-    deletedAt: null,
-  }),
+  (data) => {
+    const now = new Date();
+    return {
+      id: (data["id"] as string) ?? randomUUID(),
+      userId: data["userId"] as string,
+      companyName: data["companyName"] as string,
+      rcNumber: (data["rcNumber"] as string | null) ?? null,
+      companyAddress: (data["companyAddress"] as string | null) ?? null,
+      companyCity: (data["companyCity"] as string | null) ?? null,
+      companyState: (data["companyState"] as string | null) ?? null,
+      companyPhone: (data["companyPhone"] as string | null) ?? null,
+      companyEmail: (data["companyEmail"] as string | null) ?? null,
+      companyWebsite: (data["companyWebsite"] as string | null) ?? null,
+      description: (data["description"] as string | null) ?? null,
+      isVerified: Boolean(data["isVerified"]),
+      kycStatus: (data["kycStatus"] as string) ?? "pending",
+      createdAt: (data["createdAt"] as Date | undefined) ?? now,
+      updatedAt: (data["updatedAt"] as Date | undefined) ?? now,
+      deletedAt: (data["deletedAt"] as Date | null) ?? null,
+    };
+  },
 );
 
 const serviceProviderModel = buildModel<ServiceProviderRow>(
   "serviceProviders",
-  (data) => ({
-    id: randomUUID(),
-    userId: data["userId"] as string,
-    businessName: data["businessName"] as string,
-    slug: (data["slug"] as string) ?? randomUUID(),
-  }),
+  (data) => {
+    const now = new Date();
+    return {
+      id: (data["id"] as string) ?? randomUUID(),
+      userId: data["userId"] as string,
+      businessName: data["businessName"] as string,
+      slug: (data["slug"] as string) ?? randomUUID(),
+      category: (data["category"] as string) ?? "legal",
+      description: (data["description"] as string | null) ?? null,
+      servicesOffered: (data["servicesOffered"] as Json | undefined) ?? [],
+      address: (data["address"] as string | null) ?? null,
+      city: (data["city"] as string) ?? "Lagos",
+      state: (data["state"] as string) ?? "Lagos",
+      country: (data["country"] as string) ?? "Nigeria",
+      phone: (data["phone"] as string | null) ?? null,
+      email: (data["email"] as string | null) ?? null,
+      website: (data["website"] as string | null) ?? null,
+      logoUrl: (data["logoUrl"] as string | null) ?? null,
+      galleryImages: (data["galleryImages"] as string[] | undefined) ?? [],
+      rating: (data["rating"] as number | undefined) ?? 0,
+      reviewCount: (data["reviewCount"] as number | undefined) ?? 0,
+      isVerified: Boolean(data["isVerified"]),
+      verificationLevel: (data["verificationLevel"] as string) ?? "basic",
+      subscriptionTier: (data["subscriptionTier"] as string) ?? "free",
+      viewCount: (data["viewCount"] as number | undefined) ?? 0,
+      leadCount: (data["leadCount"] as number | undefined) ?? 0,
+      subCategories: (data["subCategories"] as string[] | undefined) ?? [],
+      serviceAreas: (data["serviceAreas"] as string[] | undefined) ?? [],
+      completedJobCount: (data["completedJobCount"] as number | undefined) ?? 0,
+      responseRatePercent: (data["responseRatePercent"] as number | undefined) ?? 0,
+      aiMatchScore: (data["aiMatchScore"] as number | undefined) ?? 0,
+      isFeatured: Boolean(data["isFeatured"]),
+      featuredUntil: (data["featuredUntil"] as Date | null) ?? null,
+      whatsappPhone: (data["whatsappPhone"] as string | null) ?? null,
+      portfolioItems: (data["portfolioItems"] as Json | undefined) ?? [],
+      socialLinks: (data["socialLinks"] as Json | null) ?? null,
+      deletedAt: (data["deletedAt"] as Date | null) ?? null,
+      createdAt: (data["createdAt"] as Date | undefined) ?? now,
+      updatedAt: (data["updatedAt"] as Date | undefined) ?? now,
+    };
+  },
+  [["userId"], ["slug"]],
 );
+
+const serviceProviderModelWithGroupBy = {
+  ...serviceProviderModel,
+  groupBy: async (args: {
+    by: ["category"];
+    where?: Where;
+    _count: { _all: true };
+  }) => {
+    const where = args.where ?? {};
+    const list = tables.serviceProviders.filter((r) => rowMatches(r as Record<string, unknown>, where));
+    const map = new Map<string, number>();
+    for (const r of list) {
+      map.set(r.category, (map.get(r.category) ?? 0) + 1);
+    }
+    return [...map.entries()].map(([category, count]) => ({
+      category,
+      _count: { _all: count },
+    }));
+  },
+};
+
+const serviceLeadModel = buildModel<ServiceLeadRow>(
+  "serviceLeads",
+  (data) => {
+    const now = new Date();
+    return {
+      id: (data["id"] as string) ?? randomUUID(),
+      serviceProviderId: data["serviceProviderId"] as string,
+      clientUserId: (data["clientUserId"] as string | null) ?? null,
+      clientName: (data["clientName"] as string) ?? "Client",
+      clientPhone: (data["clientPhone"] as string) ?? "",
+      clientEmail: (data["clientEmail"] as string | null) ?? null,
+      source: (data["source"] as string) ?? "directory",
+      listingId: (data["listingId"] as string | null) ?? null,
+      projectId: (data["projectId"] as string | null) ?? null,
+      bundleId: (data["bundleId"] as string | null) ?? null,
+      serviceRequested: (data["serviceRequested"] as string) ?? "",
+      message: (data["message"] as string) ?? "",
+      budget: (data["budget"] as bigint | null) ?? null,
+      timeline: (data["timeline"] as string | null) ?? null,
+      location: (data["location"] as string) ?? "",
+      status: (data["status"] as string) ?? "pending",
+      aiScore: (data["aiScore"] as number | null) ?? null,
+      aiSummary: (data["aiSummary"] as string | null) ?? null,
+      quotedAmountKobo: (data["quotedAmountKobo"] as bigint | null) ?? null,
+      finalAmountKobo: (data["finalAmountKobo"] as bigint | null) ?? null,
+      respondedAt: (data["respondedAt"] as Date | null) ?? null,
+      completedAt: (data["completedAt"] as Date | null) ?? null,
+      createdAt: (data["createdAt"] as Date | undefined) ?? now,
+    };
+  },
+  [["id"]],
+);
+
+const serviceBundleModel = buildModel<ServiceBundleRow>(
+  "serviceBundles",
+  (data) => {
+    return {
+      id: (data["id"] as string) ?? randomUUID(),
+      name: (data["name"] as string) ?? "Bundle",
+      slug: (data["slug"] as string) ?? randomUUID(),
+      description: (data["description"] as string) ?? "",
+      categories: Array.isArray(data["categories"]) ? (data["categories"] as string[]) : [],
+      priceFromKobo: (data["priceFromKobo"] as bigint | undefined) ?? 0n,
+      priceToKobo: (data["priceToKobo"] as bigint | undefined) ?? 0n,
+      triggerContext: (data["triggerContext"] as string) ?? "post_purchase",
+      isActive: data["isActive"] !== false,
+      activationCount: (data["activationCount"] as number | undefined) ?? 0,
+    };
+  },
+  [["id"], ["slug"]],
+);
+
+const bundleActivationModel = buildModel<BundleActivationRow>(
+  "bundleActivations",
+  (data) => {
+    const now = new Date();
+    return {
+      id: (data["id"] as string) ?? randomUUID(),
+      bundleId: data["bundleId"] as string,
+      clientUserId: data["clientUserId"] as string,
+      listingId: (data["listingId"] as string | null) ?? null,
+      status: (data["status"] as string) ?? "initiated",
+      matchedProviders: (data["matchedProviders"] as Json | undefined) ?? [],
+      totalAmountKobo: (data["totalAmountKobo"] as bigint | null) ?? null,
+      platformFeeKobo: (data["platformFeeKobo"] as bigint | null) ?? null,
+      createdAt: (data["createdAt"] as Date | undefined) ?? now,
+    };
+  },
+  [["id"]],
+);
+
+const serviceReviewModel = buildModel<ServiceReviewRow>(
+  "serviceReviews",
+  (data) => {
+    const now = new Date();
+    return {
+      id: (data["id"] as string) ?? randomUUID(),
+      serviceLeadId: data["serviceLeadId"] as string,
+      serviceProviderId: data["serviceProviderId"] as string,
+      reviewerId: data["reviewerId"] as string,
+      overallRating: Number(data["overallRating"]),
+      qualityRating: Number(data["qualityRating"]),
+      communicationRating: Number(data["communicationRating"]),
+      timelinessRating: Number(data["timelinessRating"]),
+      valueRating: Number(data["valueRating"]),
+      title: (data["title"] as string) ?? "",
+      body: (data["body"] as string) ?? "",
+      isJobVerified: Boolean(data["isJobVerified"]),
+      providerResponse: (data["providerResponse"] as string | null) ?? null,
+      createdAt: (data["createdAt"] as Date | undefined) ?? now,
+    };
+  },
+  [["id"], ["serviceLeadId"]],
+);
+
+const notificationModel = buildModel<NotificationRow>(
+  "notifications",
+  (data) => {
+    const now = new Date();
+    return {
+      id: (data["id"] as string) ?? randomUUID(),
+      userId: data["userId"] as string,
+      type: (data["type"] as string) ?? "system",
+      title: data["title"] as string,
+      body: (data["body"] as string | null) ?? null,
+      metadata: (data["metadata"] as Json | null) ?? null,
+      readAt: (data["readAt"] as Date | null) ?? null,
+      createdAt: (data["createdAt"] as Date | undefined) ?? now,
+    };
+  },
+  [["id"]],
+);
+
+const providerAvailabilityModel = buildModel<ProviderAvailabilityRow>(
+  "providerAvailability",
+  (data) => ({
+    id: (data["id"] as string) ?? randomUUID(),
+    serviceProviderId: data["serviceProviderId"] as string,
+    date: (data["date"] as Date) ?? new Date(),
+    isAvailable: data["isAvailable"] !== false,
+    slots: (data["slots"] as Json | null) ?? null,
+    note: (data["note"] as string | null) ?? null,
+  }),
+  [["id"]],
+);
+
+/** Values embedded in contextual match `$queryRaw` (PostGIS prod / fake heuristic in tests). */
+const SERVICE_CATEGORY_LITERALS = new Set([
+  "legal",
+  "mortgage",
+  "architecture",
+  "survey",
+  "insurance",
+  "renovation",
+  "photography",
+  "property_management",
+  "valuation",
+  "cleaning_moving",
+  "home_technology",
+  "inspection",
+]);
+
+function uuidLike(s: unknown): s is string {
+  return (
+    typeof s === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)
+  );
+}
+
+function extractTaggedTemplateSqlValues(parts: unknown, rest: unknown[]): unknown[] {
+  if (
+    typeof parts === "object" &&
+    parts !== null &&
+    "values" in parts &&
+    Array.isArray((parts as { values: unknown }).values)
+  ) {
+    return [...((parts as { values: unknown[] }).values)];
+  }
+  // Tagged template: `...${x}` → (strings, ...exprValues)
+  if (Array.isArray(parts) && parts !== null && "raw" in parts) {
+    return rest;
+  }
+  return rest;
+}
+
+function syntheticServicehubCandidates(values: unknown[]): { id: string; distance_m: number }[] {
+  let listingId: string | undefined;
+  for (const v of values) {
+    if (uuidLike(v) && tables.listings.some((l) => l.id === v && !l.deletedAt)) listingId = v;
+  }
+  let category: string | undefined;
+  for (const v of values) {
+    if (typeof v === "string" && SERVICE_CATEGORY_LITERALS.has(v)) category = v;
+  }
+  if (!listingId || !category) return [];
+
+  return tables.serviceProviders
+    .filter((sp) => !sp.deletedAt && sp.category === category)
+    .slice(0, 120)
+    .map((sp, idx) => ({ id: sp.id, distance_m: 2100 + idx * 37 }));
+}
 
 export const fakePrisma = {
   user: userModel,
-  userProfile: { findFirst: async () => null },
+  userProfile: {
+    findFirst: async () => null,
+    findUnique: async (args: { where: { userId: string } }) => {
+      const row = tables.profiles.find((p) => p.userId === args.where.userId);
+      return row ? clone(row) : null;
+    },
+  },
   property: propertyModel,
   listing: listingModel,
   agent: agentModel,
   developer: developerModel,
-  serviceProvider: serviceProviderModel,
+  serviceProvider: serviceProviderModelWithGroupBy,
   savedListing: savedListingModel,
   listingRecentView: recentViewModel,
+  tourRequest: tourRequestModel,
   savedSearch: savedSearchModel,
   inquiry: inquiryModel,
+  message: messageModel,
   listingPriceHistory: listingPriceHistoryModel,
   developerProject: developerProjectModel,
+  developerBulkUpload: developerBulkUploadModel,
+  developerBulkUploadRow: developerBulkUploadRowModel,
+  projectUnit: projectUnitModel,
+  developerKycDocument: developerKycDocumentModel,
+  developerMembership: developerMembershipModel,
+  developerInvite: developerInviteModel,
+  subscription: subscriptionModel,
+  auditLog: auditLogModel,
   rawWhatsAppMessage: rawWhatsAppMessageModel,
   listingSeoVariant: listingSeoVariantModel,
+  serviceLead: serviceLeadModel,
+  serviceBundle: serviceBundleModel,
+  bundleActivation: bundleActivationModel,
+  serviceReview: serviceReviewModel,
+  notification: notificationModel,
+  providerAvailability: providerAvailabilityModel,
   review: {
     findMany: async () => [],
   },
   $transaction: async <T>(fn: (tx: typeof fakePrisma) => Promise<T>) => fn(fakePrisma),
-  $queryRaw: async () => [],
+  $queryRaw: async (parts?: unknown, ...values: unknown[]) => {
+    const flat = extractTaggedTemplateSqlValues(parts, values);
+    const rows = syntheticServicehubCandidates(flat);
+    if (rows.length > 0) return rows;
+    return [];
+  },
   $executeRaw: async () => 0,
 };
 

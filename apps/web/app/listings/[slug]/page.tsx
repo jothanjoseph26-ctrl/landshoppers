@@ -24,6 +24,7 @@ import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { ImageGallery } from '@/components/listings/image-gallery'
 import { InquiryForm } from '@/components/listings/inquiry-form'
+import { ServiceHubListingMatchSection } from '@/components/servicehub/servicehub-listing-match-section'
 import { ListingMiniMap } from '@/components/listings/listing-mini-map'
 import { MortgageCalculator } from '@/components/listings/mortgage-calculator'
 import { PropertyCard } from '@/components/listings/property-card'
@@ -460,6 +461,14 @@ export default async function PropertyDetailPage({
               />
             </div>
           </div>
+
+          <section className="mt-14" aria-label="Recommended services">
+            <ServiceHubListingMatchSection
+              listingId={listing.id}
+              city={listing.city}
+              state={listing.state}
+            />
+          </section>
 
           {/* Similar Listings */}
           <section className="mt-16">

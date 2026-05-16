@@ -3,8 +3,10 @@ import type { Redis } from "ioredis";
 
 import {
   QUEUE_LISTING_INDEX,
+  QUEUE_PROVIDER_MATCH_SCORE,
   QUEUE_SAVED_SEARCH_ALERTS,
   QUEUE_SEO_GENERATION,
+  QUEUE_SERVICEHUB_WHATSAPP_LEAD,
   QUEUE_WHATSAPP_EXTRACTION,
 } from "./constants.js";
 import { defaultProducerJobOptions } from "./job-defaults.js";
@@ -25,6 +27,14 @@ export function createQueues(connection: Redis) {
       defaultJobOptions: defaultProducerJobOptions,
     }),
     savedSearchAlerts: new Queue(QUEUE_SAVED_SEARCH_ALERTS, {
+      connection,
+      defaultJobOptions: defaultProducerJobOptions,
+    }),
+    providerMatchScore: new Queue(QUEUE_PROVIDER_MATCH_SCORE, {
+      connection,
+      defaultJobOptions: defaultProducerJobOptions,
+    }),
+    servicehubWhatsAppLead: new Queue(QUEUE_SERVICEHUB_WHATSAPP_LEAD, {
       connection,
       defaultJobOptions: defaultProducerJobOptions,
     }),

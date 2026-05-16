@@ -5,11 +5,13 @@ import { meToJson } from "../../lib/serialize/me.js";
 import { prisma } from "../../lib/prisma.js";
 import { requireAuth } from "../../middleware/auth.js";
 import type { ApiEnv } from "../../types/env.js";
+import { meDeveloperV1 } from "./me.developer.js";
 import { savedListingsV1 } from "./me.saved-listings.js";
 import { savedSearchesV1 } from "./me.saved-searches.js";
 import { recentListingsV1 } from "./me.recent-listings.js";
 import { meInquiriesV1 } from "./me.inquiries.js";
 import { meRecommendationsV1 } from "./me.recommendations.js";
+import { meServiceLeadsV1 } from "./me.service-leads.js";
 
 export const meV1 = new Hono<ApiEnv>();
 
@@ -41,3 +43,5 @@ meV1.route("/saved-searches", savedSearchesV1);
 meV1.route("/recent-listings", recentListingsV1);
 meV1.route("/inquiries", meInquiriesV1);
 meV1.route("/recommendations", meRecommendationsV1);
+meV1.route("/developer", meDeveloperV1);
+meV1.route("/service-leads", meServiceLeadsV1);

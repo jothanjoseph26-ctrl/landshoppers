@@ -1,118 +1,32 @@
 "use client"
 
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { 
-  Building2, 
-  TrendingUp, 
-  Users, 
-  DollarSign, 
-  Eye, 
+import useSWR from "swr"
+import { formatDistanceToNow } from "date-fns"
+import {
+  Building2,
+  TrendingUp,
+  Users,
+  Eye,
   MessageSquare,
-  ArrowUpRight,
-  ArrowDownRight,
   Plus,
   ChevronRight,
-  Home
+  Home,
+  Loader2,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { MarketListingsStat } from "@/components/developer/market-listings-stat"
-import { PortalPendingApiBanner } from "@/components/dashboard/portal-banner"
-
-const stats = [
-  {
-    title: "Units Sold",
-    value: "156",
-    change: "+24",
-    trend: "up",
-    icon: Home,
-    color: "text-primary",
-    bgColor: "bg-primary/10",
-  },
-  {
-    title: "Active Inquiries",
-    value: "48",
-    change: "+12",
-    trend: "up",
-    icon: MessageSquare,
-    color: "text-purple-600",
-    bgColor: "bg-purple-100",
-  },
-  {
-    title: "Revenue (YTD)",
-    value: "₦2.4B",
-    change: "+18%",
-    trend: "up",
-    icon: DollarSign,
-    color: "text-accent",
-    bgColor: "bg-accent/20",
-  },
-]
-
-const recentProjects = [
-  {
-    id: "1",
-    name: "Lekki Gardens Estate",
-    status: "ONGOING",
-    units: 48,
-    sold: 32,
-    views: 1240,
-    inquiries: 18,
-    image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=200&h=150&fit=crop",
-  },
-  {
-    id: "2",
-    name: "Victoria Courts",
-    status: "UPCOMING",
-    units: 24,
-    sold: 0,
-    views: 890,
-    inquiries: 42,
-    image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=200&h=150&fit=crop",
-  },
-  {
-    id: "3",
-    name: "Ikoyi Towers",
-    status: "COMPLETED",
-    units: 36,
-    sold: 36,
-    views: 2100,
-    inquiries: 0,
-    image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=200&h=150&fit=crop",
-  },
-]
-
-const recentLeads = [
-  {
-    id: "1",
-    name: "Chioma Eze",
-    project: "Lekki Gardens Estate",
-    type: "3 Bed Terrace",
-    date: "2 hours ago",
-    status: "new",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
-  },
-  {
-    id: "2",
-    name: "Emmanuel Adeyemi",
-    project: "Victoria Courts",
-    type: "2 Bed Apartment",
-    date: "5 hours ago",
-    status: "contacted",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-  },
-  {
-    id: "3",
-    name: "Ngozi Okafor",
-    project: "Lekki Gardens Estate",
-    type: "4 Bed Detached",
-    date: "1 day ago",
-    status: "touring",
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
-  },
-]
+import {
+  fetchDeveloperDashboard,
+  fetchDeveloperInquiries,
+  type ApiDeveloperProject,
+  type ApiDeveloperInquiryRow,
+} from "@/lib/api/developer-portal"
+import { getAccessToken } from "@/lib/api/auth-session"
 
 const statusColors: Record<string, string> = {
   UPCOMING: "bg-blue-100 text-blue-800",
@@ -123,23 +37,86 @@ const statusColors: Record<string, string> = {
 
 const leadStatusColors: Record<string, string> = {
   new: "bg-blue-100 text-blue-800",
-  contacted: "bg-muted text-foreground",
+  responded: "bg-muted text-foreground",
   touring: "bg-primary/10 text-primary",
   closed: "bg-gray-100 text-gray-800",
+  lost: "bg-destructive/10 text-destructive",
+}
+
+function activeInquiryCount(byStatus: Record<string, number>): number {
+  const keys = ["new", "responded", "touring"] as const
+  return keys.reduce((sum, k) => sum + (byStatus[k] ?? 0), 0)
+}
+
+function displayLeadName(row: ApiDeveloperInquiryRow): string {
+  return (
+    row.buyerName?.trim() ||
+    row.buyerEmail?.trim() ||
+    row.buyerPhone?.trim() ||
+    "Buyer"
+  )
+}
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return "?"
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase()
+  return (parts[0]![0] + parts[parts.length - 1]![0]).toUpperCase()
 }
 
 export default function DeveloperDashboard() {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const token = mounted ? getAccessToken() : null
+
+  const dashKey = token ? (["developer-dashboard"] as const) : null
+  const { data: dash, error: dashError, isLoading: dashLoading } = useSWR(
+    dashKey,
+    () => fetchDeveloperDashboard().then((r) => r.data),
+  )
+
+  const inqKey = token ? (["developer-inquiries-preview"] as const) : null
+  const { data: leadRows, error: inqError } = useSWR(
+    inqKey,
+    () => fetchDeveloperInquiries({ page: 1, pageSize: 6 }).then((r) => r.data),
+  )
+
+  const signedIn = Boolean(token)
+  const loadError = dashError || inqError
+  const recentProjects: ApiDeveloperProject[] = useMemo(
+    () => dash?.recentProjects ?? [],
+    [dash],
+  )
+  const previewLeads: ApiDeveloperInquiryRow[] = leadRows ?? []
+
   return (
     <div className="space-y-8">
-      <PortalPendingApiBanner
-        title="Developer portal renders sample data"
-        description="The marketplace listings count is live; the rest of the dashboard waits on the developer projects/leads API."
-      />
+      {mounted && !signedIn ? (
+        <div className="rounded-lg border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
+          Sign in with a <strong className="text-foreground">developer</strong> account to load your
+          portfolio stats, recent projects, and inquiries. Marketplace listing totals below stay live
+          for everyone.
+        </div>
+      ) : null}
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {signedIn && loadError ? (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          Could not load dashboard data. Check that the API is running and you are logged in as a
+          developer.
+        </div>
+      ) : null}
+
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here&apos;s your portfolio overview.</p>
+          <h1 className="text-2xl font-bold md:text-3xl">Dashboard</h1>
+          <p className="text-muted-foreground">
+            {signedIn && dash?.companyName
+              ? `${dash.companyName} — portfolio overview`
+              : "Welcome back! Here's your portfolio overview."}
+          </p>
         </div>
         <div className="flex gap-3">
           <Link href="/developer/projects/new">
@@ -151,44 +128,91 @@ export default function DeveloperDashboard() {
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MarketListingsStat />
-        {stats.map((stat) => (
-          <Card key={stat.title}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                  <stat.icon className={`h-5 w-5 ${stat.color}`} />
+        {signedIn && dashLoading ? (
+          <>
+            {[1, 2, 3].map((i) => (
+              <Card key={i}>
+                <CardContent className="flex h-[120px] items-center justify-center p-6">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </CardContent>
+              </Card>
+            ))}
+          </>
+        ) : signedIn && dash ? (
+          <>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="rounded-lg bg-primary/10 p-2">
+                    <Home className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="text-xs font-medium text-primary">Live</span>
                 </div>
-                <div className={`flex items-center gap-1 text-sm ${
-                  stat.trend === "up" ? "text-primary" : "text-red-600"
-                }`}>
-                  {stat.change}
-                  {stat.trend === "up" ? (
-                    <ArrowUpRight className="h-4 w-4" />
-                  ) : (
-                    <ArrowDownRight className="h-4 w-4" />
-                  )}
+                <div className="mt-4">
+                  <p className="text-2xl font-bold">{dash.totalUnitsSold}</p>
+                  <p className="text-sm text-muted-foreground">Units sold (your projects)</p>
                 </div>
-              </div>
-              <div className="mt-4">
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-sm text-muted-foreground">{stat.title}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="rounded-lg bg-purple-100 p-2">
+                    <MessageSquare className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <span className="text-xs font-medium text-primary">Live</span>
+                </div>
+                <div className="mt-4">
+                  <p className="text-2xl font-bold">{activeInquiryCount(dash.inquiries.byStatus)}</p>
+                  <p className="text-sm text-muted-foreground">Open inquiries (new + in progress)</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {dash.inquiries.total} total · {dash.inquiries.byStatus["closed"] ?? 0} closed
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="rounded-lg bg-accent/20 p-2">
+                    <Building2 className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="text-xs font-medium text-primary">Live</span>
+                </div>
+                <div className="mt-4">
+                  <p className="text-2xl font-bold">{dash.projectCount}</p>
+                  <p className="text-sm text-muted-foreground">Projects</p>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <>
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="border-dashed">
+                <CardContent className="flex h-[120px] flex-col justify-center p-6">
+                  <p className="text-2xl font-bold text-muted-foreground">—</p>
+                  <p className="text-sm text-muted-foreground">
+                    {i === 1 ? "Units sold" : i === 2 ? "Open inquiries" : "Projects"}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </>
+        )}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Recent Projects */}
+      <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Recent Projects</CardTitle>
-                <CardDescription>Your latest development projects</CardDescription>
+                <CardDescription>
+                  {signedIn ? "Latest updates across your developments" : "Sign in to see your projects"}
+                </CardDescription>
               </div>
               <Link href="/developer/projects">
                 <Button variant="ghost" size="sm">
@@ -198,53 +222,80 @@ export default function DeveloperDashboard() {
               </Link>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {recentProjects.map((project) => (
-                  <Link 
-                    key={project.id} 
-                    href={`/developer/projects/${project.id}`}
-                    className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted transition-colors"
-                  >
-                    <div className="relative h-16 w-24 rounded-lg overflow-hidden flex-shrink-0">
-                      <img
-                        src={project.image}
-                        alt={project.name}
-                        className="object-cover w-full h-full"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold truncate">{project.name}</h4>
-                        <Badge className={statusColors[project.status]} variant="secondary">
-                          {project.status}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>{project.sold}/{project.units} units sold</span>
-                        <span className="flex items-center gap-1">
-                          <Eye className="h-3 w-3" />
-                          {project.views}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MessageSquare className="h-3 w-3" />
-                          {project.inquiries}
-                        </span>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+              {signedIn && dashLoading ? (
+                <div className="flex justify-center py-12 text-muted-foreground">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              ) : signedIn && recentProjects.length === 0 ? (
+                <div className="py-10 text-center text-sm text-muted-foreground">
+                  <p className="mb-3">No projects yet.</p>
+                  <Link href="/developer/projects/new">
+                    <Button size="sm">Create your first project</Button>
                   </Link>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentProjects.map((project) => {
+                    const img = project.images[0]
+                    return (
+                      <Link
+                        key={project.id}
+                        href={`/developer/projects/${project.id}`}
+                        className="flex items-center gap-4 rounded-lg p-3 transition-colors hover:bg-muted"
+                      >
+                        <div className="relative h-16 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
+                          {img ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={img}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-muted-foreground">
+                              <Building2 className="h-6 w-6 opacity-50" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex items-center gap-2">
+                            <h4 className="truncate font-semibold">{project.name}</h4>
+                            <Badge
+                              className={statusColors[project.status] ?? "bg-muted"}
+                              variant="secondary"
+                            >
+                              {project.status}
+                            </Badge>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                            <span>
+                              {project.soldUnits}/{project.totalUnits} units sold
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Eye className="h-3 w-3" />
+                              {project.viewCount}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MessageSquare className="h-3 w-3" />
+                              {project.inquiryCount}
+                            </span>
+                          </div>
+                        </div>
+                        <ChevronRight className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Recent Leads */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>Recent Leads</CardTitle>
-              <CardDescription>Latest buyer inquiries</CardDescription>
+              <CardDescription>Latest buyer inquiries on your projects</CardDescription>
             </div>
             <Link href="/developer/leads">
               <Button variant="ghost" size="sm">
@@ -254,59 +305,81 @@ export default function DeveloperDashboard() {
             </Link>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentLeads.map((lead) => (
-                <div key={lead.id} className="flex items-start gap-3">
-                  <Avatar>
-                    <AvatarImage src={lead.avatar} alt={lead.name} />
-                    <AvatarFallback>{lead.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-medium truncate">{lead.name}</p>
-                      <Badge className={leadStatusColors[lead.status]} variant="secondary">
-                        {lead.status}
-                      </Badge>
+            {signedIn && !leadRows && !inqError ? (
+              <div className="flex justify-center py-10 text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : signedIn && previewLeads.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No inquiries yet. When buyers message your projects, they will appear here.
+              </p>
+            ) : signedIn ? (
+              <div className="space-y-4">
+                {previewLeads.map((lead) => {
+                  const name = displayLeadName(lead)
+                  const rel = formatDistanceToNow(new Date(lead.createdAt), { addSuffix: true })
+                  const raw = lead.message?.trim()
+                  const preview =
+                    raw && raw.length > 80 ? `${raw.slice(0, 80)}…` : raw ?? ""
+                  return (
+                    <div key={lead.id} className="flex items-start gap-3">
+                      <Avatar>
+                        <AvatarFallback>{initials(name)}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="truncate font-medium">{name}</p>
+                          <Badge
+                            className={leadStatusColors[lead.status] ?? "bg-muted"}
+                            variant="secondary"
+                          >
+                            {lead.status}
+                          </Badge>
+                        </div>
+                        <p className="truncate text-sm text-muted-foreground">
+                          {preview || "—"} · {lead.project?.name ?? "Project"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{rel}</p>
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {lead.type} • {lead.project}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{lead.date}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                Sign in as a developer to see inquiries from your projects.
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Quick Actions */}
       <Card>
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
             <Link href="/developer/projects/new">
-              <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
+              <Button variant="outline" className="flex h-auto w-full flex-col gap-2 py-4">
                 <Plus className="h-6 w-6" />
                 <span>Add New Project</span>
               </Button>
             </Link>
             <Link href="/developer/bulk-upload">
-              <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
+              <Button variant="outline" className="flex h-auto w-full flex-col gap-2 py-4">
                 <Building2 className="h-6 w-6" />
                 <span>Bulk Upload Units</span>
               </Button>
             </Link>
             <Link href="/developer/leads">
-              <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
+              <Button variant="outline" className="flex h-auto w-full flex-col gap-2 py-4">
                 <Users className="h-6 w-6" />
                 <span>View All Leads</span>
               </Button>
             </Link>
             <Link href="/developer/analytics">
-              <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
+              <Button variant="outline" className="flex h-auto w-full flex-col gap-2 py-4">
                 <TrendingUp className="h-6 w-6" />
                 <span>View Analytics</span>
               </Button>

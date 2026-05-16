@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+
 import { usePathname } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
 import { Bell, LogOut, Menu, X } from "lucide-react"
@@ -10,14 +11,32 @@ import { BrandLogo } from "@/components/layout/brand-logo"
 import { logoutAccount } from "@/lib/api/auth"
 import { clearAuthSession } from "@/lib/api/auth-session"
 import { cn } from "@/lib/utils"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+
+/** Portal billing tier shared by Agent OS and Provider OS shells. */
+export type PortalTier = "free" | "pro" | "elite"
 
 export type PortalNavItem = {
   title: string
   href: string
   icon: LucideIcon
+}
+
+function tierLabel(tier: PortalTier): string {
+  switch (tier) {
+    case "free":
+      return "Free"
+    case "pro":
+      return "Pro"
+    case "elite":
+      return "Elite"
+    default: {
+      const _x: never = tier
+      return _x
+    }
+  }
 }
 
 export function PortalShell({
@@ -26,12 +45,22 @@ export function PortalShell({
   portalTitle,
   persona,
   initials,
+  personaSubline,
+  avatarUrl,
+  tier,
+  subscriptionHref = "/agent/subscription",
 }: {
   children: React.ReactNode
   navItems: PortalNavItem[]
   portalTitle: string
   persona: string
   initials: string
+  /** Second line under the primary name (e.g. display name · city). */
+  personaSubline?: string | null
+  avatarUrl?: string | null
+  tier?: PortalTier | null
+  /** Destination for the tier badge link (agent subscription by default). */
+  subscriptionHref?: string
 }) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -47,6 +76,10 @@ export function PortalShell({
         <Button variant="ghost" size="icon">
           <Bell className="h-5 w-5" />
         </Button>
+        <Avatar className="h-8 w-8 border border-border">
+          {avatarUrl ? <AvatarImage src={avatarUrl} alt="" className="object-cover" /> : null}
+          <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+        </Avatar>
       </header>
 
       <div className="flex">
@@ -64,13 +97,33 @@ export function PortalShell({
             <div className="border-b p-4">
               <div className="flex items-center gap-3">
                 <Avatar>
+                  {avatarUrl ? <AvatarImage src={avatarUrl} alt="" className="object-cover" /> : null}
                   <AvatarFallback>{initials}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{persona}</p>
-                  <Badge variant="secondary" className="text-xs">
-                    {portalTitle}
-                  </Badge>
+                  {personaSubline ? (
+                    <p className="truncate text-xs text-muted-foreground">{personaSubline}</p>
+                  ) : null}
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    <Badge variant="secondary" className="text-xs">
+                      {portalTitle}
+                    </Badge>
+                    {tier != null ? (
+                      <Link href={subscriptionHref} className="inline-flex">
+                        <Badge
+                          variant={tier === "free" ? "outline" : tier === "pro" ? "secondary" : "default"}
+                          className={
+                            tier === "elite"
+                              ? "border-amber-500/40 bg-amber-500/15 text-amber-950 hover:bg-amber-500/25 dark:text-amber-50"
+                              : "cursor-pointer"
+                          }
+                        >
+                          {tierLabel(tier)}
+                        </Badge>
+                      </Link>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             </div>
@@ -134,11 +187,12 @@ export function PortalShell({
             </Button>
             <div className="flex items-center gap-3">
               <Avatar>
+                {avatarUrl ? <AvatarImage src={avatarUrl} alt="" className="object-cover" /> : null}
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
               <div className="hidden md:block">
                 <p className="text-sm font-medium">{persona}</p>
-                <p className="text-xs text-muted-foreground">Account</p>
+                <p className="text-xs text-muted-foreground">{personaSubline?.trim() || "Account"}</p>
               </div>
             </div>
           </header>

@@ -21,6 +21,7 @@ const footerLinks = {
     { name: 'For Agents', href: '/for-agents' },
     { name: 'For Developers', href: '/for-developers' },
     { name: 'Service Directory', href: '/services' },
+    { name: 'Service providers', href: '/services/join' },
     { name: 'Pricing', href: '/pricing' },
     { name: 'Partner With Us', href: '/partners' },
   ],

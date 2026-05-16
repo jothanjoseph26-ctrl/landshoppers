@@ -124,6 +124,14 @@ enum UnitStatus {
   sold
 }
 
+enum DeveloperBulkUploadStatus {
+  mapping
+  validating
+  ready
+  committed
+  failed
+}
+
 enum SeoVariantStatus {
   draft
   approved
@@ -150,6 +158,72 @@ enum ServiceCategory {
   renovation
   photography
   property_management
+  /// §1.4 — Valuation & Appraisal
+  valuation
+  /// §1.4 — Cleaning & Moving
+  cleaning_moving
+  /// §1.4 — Home Technology
+  home_technology
+  /// §1.4 — Inspection & Certification
+  inspection
+}
+
+/// Provider credential tier — affects match ranking (spec §2.2).
+enum ProviderVerificationLevel {
+  basic
+  standard
+  professional
+  elite
+}
+
+/// Paywall tier (spec §1 intro, §7).
+enum ProviderTier {
+  free
+  pro
+  elite
+}
+
+enum ServiceLeadSource {
+  listing_page
+  directory
+  bundle
+  whatsapp
+  agent_referral
+  developer_rfq
+  post_purchase
+}
+
+enum ServiceLeadStatus {
+  pending
+  responded
+  quoted
+  negotiating
+  accepted
+  completed
+  cancelled
+  lost
+}
+
+enum ServiceBundleTrigger {
+  post_purchase
+  listing_create
+  developer_project
+  diaspora
+  off_plan
+}
+
+enum BundleActivationStatus {
+  initiated
+  providers_matched
+  in_progress
+  completed
+  cancelled
+}
+
+enum ProviderWhatsAppStatus {
+  connected
+  disconnected
+  error
 }
 
 enum KycStatus {
@@ -157,6 +231,30 @@ enum KycStatus {
   submitted
   verified
   rejected
+}
+
+enum DeveloperKycDocumentType {
+  c_of_o
+  survey
+  governor_consent
+  cac
+  tax_clearance
+  other
+}
+
+enum DeveloperKycDocumentStatus {
+  pending
+  verified
+  rejected
+  expired
+}
+
+/// Portal team RBAC (slice 4). Distinct from `UserRole.developer`.
+enum DeveloperTeamRole {
+  admin
+  sales
+  marketing
+  viewer
 }
 
 enum NotificationType {
@@ -172,40 +270,45 @@ enum NotificationType {
 // ============================================
 
 model User {
-  id                String    @id @default(uuid()) @db.Uuid
-  email             String    @unique
-  passwordHash      String?
-  role              UserRole  @default(buyer)
-  isEmailVerified   Boolean   @default(false)
-  isPhoneVerified   Boolean   @default(false)
-  phone             String?
-  googleId          String?   @unique
-  lastLoginAt       DateTime?
-  failedLoginCount  Int       @default(0)
-  lockedUntil       DateTime?
-  refreshTokenHash  String?
+  id                     String    @id @default(uuid()) @db.Uuid
+  email                  String    @unique
+  passwordHash           String?
+  role                   UserRole  @default(buyer)
+  isEmailVerified        Boolean   @default(false)
+  isPhoneVerified        Boolean   @default(false)
+  phone                  String?
+  googleId               String?   @unique
+  lastLoginAt            DateTime?
+  failedLoginCount       Int       @default(0)
+  lockedUntil            DateTime?
+  refreshTokenHash       String?
   passwordResetTokenHash String?
   passwordResetExpiresAt DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  deletedAt         DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  deletedAt              DateTime?
 
   // Relations
-  profile           UserProfile?
-  agent             Agent?
-  developer         Developer?
-  serviceProvider   ServiceProvider?
-  listings          Listing[]
-  inquiriesSent     Inquiry[]         @relation("BuyerInquiries")
-  tourRequests      TourRequest[]     @relation("BuyerTours")
-  savedSearches     SavedSearch[]
-  savedListings     SavedListing[]
-  listingRecentViews ListingRecentView[]
-  notifications     Notification[]
-  messagesSent      Message[]         @relation("MessageSender")
-  messagesReceived  Message[]         @relation("MessageReceiver")
-  reviewsGiven      Review[]          @relation("ReviewAuthor")
-  auditLogs         AuditLog[]
+  profile                 UserProfile?
+  agent                   Agent?
+  developer               Developer?
+  serviceProvider         ServiceProvider?
+  listings                Listing[]
+  inquiriesSent           Inquiry[]             @relation("BuyerInquiries")
+  tourRequests            TourRequest[]         @relation("BuyerTours")
+  savedSearches           SavedSearch[]
+  savedListings           SavedListing[]
+  listingRecentViews      ListingRecentView[]
+  notifications           Notification[]
+  messagesSent            Message[]             @relation("MessageSender")
+  messagesReceived        Message[]             @relation("MessageReceiver")
+  reviewsGiven            Review[]              @relation("ReviewAuthor")
+  auditLogs               AuditLog[]
+  developerMemberships    DeveloperMembership[]
+  developerInvitesCreated DeveloperInvite[]     @relation("DeveloperInviteCreatedBy")
+  serviceLeadsAsClient    ServiceLead[]         @relation("ServiceLeadClient")
+  bundleActivations       BundleActivation[]
+  serviceReviewsAuthored  ServiceReview[]       @relation("ServiceReviewReviewer")
 
   @@index([email])
   @@index([role])
@@ -213,25 +316,25 @@ model User {
 }
 
 model UserProfile {
-  id              String    @id @default(uuid()) @db.Uuid
-  userId          String    @unique @db.Uuid
-  firstName       String?
-  lastName        String?
-  avatarUrl       String?
-  dateOfBirth     DateTime?
-  address         String?
-  city            String?
-  state           String?
-  country         String?   @default("Nigeria")
-  bio             String?
-  preferences     Json?     // Saved preferences as JSON
-  notifyEmail     Boolean   @default(true)
-  notifySms       Boolean   @default(true)
-  notifyPush      Boolean   @default(false)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @unique @db.Uuid
+  firstName   String?
+  lastName    String?
+  avatarUrl   String?
+  dateOfBirth DateTime?
+  address     String?
+  city        String?
+  state       String?
+  country     String?   @default("Nigeria")
+  bio         String?
+  preferences Json? // Saved preferences as JSON
+  notifyEmail Boolean   @default(true)
+  notifySms   Boolean   @default(true)
+  notifyPush  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_profiles")
 }
@@ -241,41 +344,42 @@ model UserProfile {
 // ============================================
 
 model Agent {
-  id                  String    @id @default(uuid()) @db.Uuid
-  userId              String    @unique @db.Uuid
-  agencyName          String?
-  licenseNumber       String?
-  bvnHash             String?   // SHA-256 hash of BVN - NEVER plaintext
-  ninHash             String?   // SHA-256 hash of NIN - NEVER plaintext
-  kycStatus           KycStatus @default(pending)
-  kycDocuments        Json?     // Array of document URLs
-  kycSubmittedAt      DateTime?
-  kycVerifiedAt       DateTime?
-  kycRejectionReason  String?
-  isVerified          Boolean   @default(false)
-  verificationBadge   Boolean   @default(false)
-  specializations     String[]  // Array of specializations
-  yearsOfExperience   Int?
-  totalListings       Int       @default(0)
-  totalSales          Int       @default(0)
-  rating              Float     @default(0)
-  reviewCount         Int       @default(0)
-  referralCode        String?   @unique
-  referredBy          String?   @db.Uuid
-  commissionEarned    BigInt    @default(0) // In kobo
-  walletBalance       BigInt    @default(0) // In kobo
-  socialLinks         Json?     // { facebook, instagram, linkedin, twitter }
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  deletedAt           DateTime?
+  id                 String    @id @default(uuid()) @db.Uuid
+  userId             String    @unique @db.Uuid
+  agencyName         String?
+  licenseNumber      String?
+  bvnHash            String? // SHA-256 hash of BVN - NEVER plaintext
+  ninHash            String? // SHA-256 hash of NIN - NEVER plaintext
+  kycStatus          KycStatus @default(pending)
+  kycDocuments       Json? // Array of document URLs
+  kycSubmittedAt     DateTime?
+  kycVerifiedAt      DateTime?
+  kycRejectionReason String?
+  isVerified         Boolean   @default(false)
+  verificationBadge  Boolean   @default(false)
+  specializations    String[] // Array of specializations
+  yearsOfExperience  Int?
+  totalListings      Int       @default(0)
+  totalSales         Int       @default(0)
+  rating             Float     @default(0)
+  reviewCount        Int       @default(0)
+  referralCode       String?   @unique
+  referredBy         String?   @db.Uuid
+  commissionEarned   BigInt    @default(0) // In kobo
+  walletBalance      BigInt    @default(0) // In kobo
+  socialLinks        Json? // { facebook, instagram, linkedin, twitter }
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
 
-  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  listings            Listing[]
-  inquiriesReceived   Inquiry[]         @relation("AgentInquiries")
-  toursScheduled      TourRequest[]     @relation("AgentTours")
-  subscription        Subscription?
-  payments            Payment[]
-  reviews             Review[]          @relation("AgentReviews")
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listings          Listing[]
+  inquiriesReceived Inquiry[]     @relation("AgentInquiries")
+  toursScheduled    TourRequest[] @relation("AgentTours")
+  subscription      Subscription?
+  payments          Payment[]
+  reviews           Review[]      @relation("AgentReviews")
+  preferredPartners AgentPreferredPartner[]
 
   @@index([kycStatus])
   @@index([isVerified])
@@ -288,102 +392,177 @@ model Agent {
 // ============================================
 
 model Developer {
-  id                  String    @id @default(uuid()) @db.Uuid
-  userId              String    @unique @db.Uuid
-  companyName         String
-  rcNumber            String?   // CAC Registration Number
-  cacDocuments        Json?     // Array of CAC document URLs
-  kycStatus           KycStatus @default(pending)
-  kycSubmittedAt      DateTime?
-  kycVerifiedAt       DateTime?
-  kycRejectionReason  String?
-  isVerified          Boolean   @default(false)
-  companyAddress      String?
-  companyCity         String?
-  companyState        String?
-  companyPhone        String?
-  companyEmail        String?
-  companyWebsite      String?
-  companyLogo         String?
-  description         String?
-  totalProjects       Int       @default(0)
-  totalUnitsSold      Int       @default(0)
-  rating              Float     @default(0)
-  reviewCount         Int       @default(0)
-  socialLinks         Json?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  deletedAt           DateTime?
+  id                 String    @id @default(uuid()) @db.Uuid
+  userId             String    @unique @db.Uuid
+  companyName        String
+  rcNumber           String? // CAC Registration Number
+  cacDocuments       Json? // Array of CAC document URLs
+  kycStatus          KycStatus @default(pending)
+  kycSubmittedAt     DateTime?
+  kycVerifiedAt      DateTime?
+  kycRejectionReason String?
+  isVerified         Boolean   @default(false)
+  companyAddress     String?
+  companyCity        String?
+  companyState       String?
+  companyPhone       String?
+  companyEmail       String?
+  companyWebsite     String?
+  companyLogo        String?
+  description        String?
+  totalProjects      Int       @default(0)
+  totalUnitsSold     Int       @default(0)
+  rating             Float     @default(0)
+  reviewCount        Int       @default(0)
+  socialLinks        Json?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
 
-  user                User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  projects            DeveloperProject[]
-  teamMembers         DeveloperTeamMember[]
-  subscription        Subscription?           @relation("DeveloperSubscription")
-  reviews             Review[]                @relation("DeveloperReviews")
+  user         User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects     DeveloperProject[]
+  teamMembers  DeveloperTeamMember[]
+  memberships  DeveloperMembership[]
+  invites      DeveloperInvite[]
+  bulkUploads  DeveloperBulkUpload[]
+  kycDocuments DeveloperKycDocument[]
+  subscription Subscription?          @relation("DeveloperSubscription")
+  reviews      Review[]               @relation("DeveloperReviews")
 
   @@index([kycStatus])
   @@index([isVerified])
   @@map("developers")
 }
 
-model DeveloperTeamMember {
-  id            String    @id @default(uuid()) @db.Uuid
-  developerId   String    @db.Uuid
-  email         String
-  name          String
-  role          String    // e.g., "Sales Rep", "Manager"
-  phone         String?
-  isActive      Boolean   @default(true)
-  permissions   Json?     // Array of permission strings
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+model DeveloperMembership {
+  id          String            @id @default(uuid()) @db.Uuid
+  developerId String            @db.Uuid
+  userId      String            @db.Uuid
+  role        DeveloperTeamRole
+  isDisabled  Boolean           @default(false)
+  /// Empty = access to all projects for this developer account.
+  projectIds  String[]          @default([])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
-  developer     Developer @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  developer Developer @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([developerId, userId])
+  @@index([developerId])
+  @@index([userId])
+  @@map("developer_memberships")
+}
+
+model DeveloperInvite {
+  id              String            @id @default(uuid()) @db.Uuid
+  developerId     String            @db.Uuid
+  email           String
+  role            DeveloperTeamRole
+  projectIds      String[]          @default([])
+  tokenHash       String
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  createdByUserId String?           @db.Uuid
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  developer Developer @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  createdBy User?     @relation("DeveloperInviteCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([developerId])
+  @@index([tokenHash])
+  @@map("developer_invites")
+}
+
+model DeveloperTeamMember {
+  id          String   @id @default(uuid()) @db.Uuid
+  developerId String   @db.Uuid
+  email       String
+  name        String
+  role        String // e.g., "Sales Rep", "Manager"
+  phone       String?
+  isActive    Boolean  @default(true)
+  permissions Json? // Array of permission strings
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  developer Developer @relation(fields: [developerId], references: [id], onDelete: Cascade)
 
   @@unique([developerId, email])
   @@map("developer_team_members")
 }
 
-model DeveloperProject {
-  id              String        @id @default(uuid()) @db.Uuid
-  developerId     String        @db.Uuid
-  name            String
-  slug            String        @unique
-  description     String?
-  shortDescription String?
-  status          ProjectStatus @default(UPCOMING)
-  propertyType    PropertyType
-  address         String?
-  city            String
-  state           String
-  country         String        @default("Nigeria")
-  latitude        Float?
-  longitude       Float?
-  /// PostGIS geography(Point,4326) — created in migration `20260509120001_postgis_geom`.
-  geom Unsupported("geography(Point,4326)")?
-  priceRangeMin   BigInt?       // In kobo
-  priceRangeMax   BigInt?       // In kobo
-  totalUnits      Int           @default(0)
-  availableUnits  Int           @default(0)
-  soldUnits       Int           @default(0)
-  amenities       String[]
-  features        String[]
-  images          String[]
-  floorPlans      String[]
-  brochureUrl     String?
-  virtualTourUrl  String?
-  completionDate  DateTime?
-  launchDate      DateTime?
-  isFeatured      Boolean       @default(false)
-  viewCount       Int           @default(0)
-  inquiryCount    Int           @default(0)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  deletedAt       DateTime?
+model DeveloperKycDocument {
+  id              String                     @id @default(uuid()) @db.Uuid
+  developerId     String                     @db.Uuid
+  projectId       String?                    @db.Uuid
+  documentType    DeveloperKycDocumentType
+  status          DeveloperKycDocumentStatus @default(pending)
+  title           String?
+  fileName        String
+  mimeType        String
+  byteSize        Int                        @default(0)
+  storageKey      String?
+  /// MVP: HTTPS URL to a PDF or image the developer controls; private S3 + presign is a later increment.
+  externalUrl     String
+  rejectionReason String?
+  expiresAt       DateTime?
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
 
-  developer       Developer     @relation(fields: [developerId], references: [id], onDelete: Cascade)
-  units           ProjectUnit[]
-  inquiries       Inquiry[]     @relation("ProjectInquiries")
+  developer Developer         @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  project   DeveloperProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([developerId])
+  @@index([projectId])
+  @@index([status])
+  @@map("developer_kyc_documents")
+}
+
+model DeveloperProject {
+  id               String                                @id @default(uuid()) @db.Uuid
+  developerId      String                                @db.Uuid
+  name             String
+  slug             String                                @unique
+  description      String?
+  shortDescription String?
+  status           ProjectStatus                         @default(UPCOMING)
+  propertyType     PropertyType
+  address          String?
+  city             String
+  state            String
+  country          String                                @default("Nigeria")
+  latitude         Float?
+  longitude        Float?
+  /// PostGIS geography(Point,4326) — created in migration `20260509120001_postgis_geom`.
+  geom             Unsupported("geography(Point,4326)")?
+  priceRangeMin    BigInt? // In kobo
+  priceRangeMax    BigInt? // In kobo
+  totalUnits       Int                                   @default(0)
+  availableUnits   Int                                   @default(0)
+  soldUnits        Int                                   @default(0)
+  amenities        String[]
+  features         String[]
+  images           String[]
+  floorPlans       String[]
+  brochureUrl      String?
+  virtualTourUrl   String?
+  completionDate   DateTime?
+  launchDate       DateTime?
+  isFeatured       Boolean                               @default(false)
+  viewCount        Int                                   @default(0)
+  inquiryCount     Int                                   @default(0)
+  createdAt        DateTime                              @default(now())
+  updatedAt        DateTime                              @updatedAt
+  deletedAt        DateTime?
+
+  developer    Developer              @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  units        ProjectUnit[]
+  inquiries    Inquiry[]              @relation("ProjectInquiries")
+  bulkUploads  DeveloperBulkUpload[]
+  kycDocuments DeveloperKycDocument[]
+  serviceLeads ServiceLead[]
 
   @@index([developerId])
   @@index([status])
@@ -392,25 +571,65 @@ model DeveloperProject {
   @@map("developer_projects")
 }
 
-model ProjectUnit {
-  id              String      @id @default(uuid()) @db.Uuid
-  projectId       String      @db.Uuid
-  unitName        String      // e.g., "Unit A1", "Block B - Floor 3"
-  unitType        String      // e.g., "2 Bedroom", "3 Bedroom Penthouse"
-  bedrooms        Int?
-  bathrooms       Int?
-  toilets         Int?
-  squareMeters    Float?
-  price           BigInt      // In kobo
-  status          UnitStatus  @default(available)
-  floorPlan       String?
-  features        String[]
-  reservedAt      DateTime?
-  soldAt          DateTime?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+model DeveloperBulkUpload {
+  id           String                    @id @default(uuid()) @db.Uuid
+  developerId  String                    @db.Uuid
+  projectId    String                    @db.Uuid
+  filename     String
+  status       DeveloperBulkUploadStatus @default(mapping)
+  errorMessage String?
+  headers      Json // string[] — CSV header row
+  parsedGrid   Json // string[][] — [header, ...dataRows] for remapping
+  columnMap    Json? // Record<systemField, csvHeader | null>
+  commitMode   String? // "draft" | "publish" after commit
+  committedAt  DateTime?
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
 
-  project         DeveloperProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  developer Developer                @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  project   DeveloperProject         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  rows      DeveloperBulkUploadRow[]
+
+  @@index([developerId])
+  @@index([projectId])
+  @@index([status])
+  @@map("developer_bulk_uploads")
+}
+
+model DeveloperBulkUploadRow {
+  id       String   @id @default(uuid()) @db.Uuid
+  uploadId String   @db.Uuid
+  rowIndex Int
+  payload  Json // normalized field values (strings/numbers) after mapping
+  errors   String[] @default([])
+  warnings String[] @default([])
+
+  upload DeveloperBulkUpload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+
+  @@unique([uploadId, rowIndex])
+  @@index([uploadId])
+  @@map("developer_bulk_upload_rows")
+}
+
+model ProjectUnit {
+  id           String     @id @default(uuid()) @db.Uuid
+  projectId    String     @db.Uuid
+  unitName     String // e.g., "Unit A1", "Block B - Floor 3"
+  unitType     String // e.g., "2 Bedroom", "3 Bedroom Penthouse"
+  bedrooms     Int?
+  bathrooms    Int?
+  toilets      Int?
+  squareMeters Float?
+  price        BigInt // In kobo
+  status       UnitStatus @default(available)
+  floorPlan    String?
+  features     String[]
+  reservedAt   DateTime?
+  soldAt       DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  project DeveloperProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([status])
@@ -422,34 +641,34 @@ model ProjectUnit {
 // ============================================
 
 model Property {
-  id              String        @id @default(uuid()) @db.Uuid
-  title           String
-  slug            String        @unique
-  description     String?
-  propertyType    PropertyType
-  address         String?
-  street          String?
-  city            String
-  state           String
-  country         String        @default("Nigeria")
-  postalCode      String?
-  latitude        Float?
-  longitude       Float?
+  id            String                                @id @default(uuid()) @db.Uuid
+  title         String
+  slug          String                                @unique
+  description   String?
+  propertyType  PropertyType
+  address       String?
+  street        String?
+  city          String
+  state         String
+  country       String                                @default("Nigeria")
+  postalCode    String?
+  latitude      Float?
+  longitude     Float?
   /// PostGIS geography(Point,4326) — created in migration `20260509120001_postgis_geom`.
-  geom Unsupported("geography(Point,4326)")?
-  bedrooms        Int?
-  bathrooms       Int?
-  toilets         Int?
-  squareMeters    Float?
-  yearBuilt       Int?
-  parkingSpaces   Int?
-  isFurnished     Boolean       @default(false)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  deletedAt       DateTime?
+  geom          Unsupported("geography(Point,4326)")?
+  bedrooms      Int?
+  bathrooms     Int?
+  toilets       Int?
+  squareMeters  Float?
+  yearBuilt     Int?
+  parkingSpaces Int?
+  isFurnished   Boolean                               @default(false)
+  createdAt     DateTime                              @default(now())
+  updatedAt     DateTime                              @updatedAt
+  deletedAt     DateTime?
 
-  listings        Listing[]
-  features        ListingFeature[]
+  listings Listing[]
+  features ListingFeature[]
 
   @@index([city, state])
   @@index([propertyType])
@@ -457,47 +676,50 @@ model Property {
 }
 
 model Listing {
-  id              String          @id @default(uuid()) @db.Uuid
-  propertyId      String          @db.Uuid
-  agentId         String?         @db.Uuid
-  userId          String          @db.Uuid
-  price           BigInt          // In kobo (₦1 = 100 kobo)
-  priceNegotiable Boolean         @default(false)
-  status          ListingStatus   @default(draft)
-  isForSale       Boolean         @default(true)
-  isForRent       Boolean         @default(false)
-  rentPeriod      String?         // "monthly", "yearly"
-  isFeatured      Boolean         @default(false)
+  id              String        @id @default(uuid()) @db.Uuid
+  propertyId      String        @db.Uuid
+  agentId         String?       @db.Uuid
+  userId          String        @db.Uuid
+  price           BigInt // In kobo (₦1 = 100 kobo)
+  priceNegotiable Boolean       @default(false)
+  status          ListingStatus @default(draft)
+  isForSale       Boolean       @default(true)
+  isForRent       Boolean       @default(false)
+  rentPeriod      String? // "monthly", "yearly"
+  isFeatured      Boolean       @default(false)
   featuredUntil   DateTime?
-  viewCount       Int             @default(0)
-  inquiryCount    Int             @default(0)
+  viewCount       Int           @default(0)
+  inquiryCount    Int           @default(0)
   virtualTourUrl  String?
   videoUrl        String?
   publishedAt     DateTime?
-  expiresAt       DateTime?       // 90-day default
-  sourceType      String?         // "web", "whatsapp", "bulk_upload"
-  sourceMessageId String?         @db.Uuid // Reference to raw_whatsapp_messages if applicable
+  expiresAt       DateTime? // 90-day default
+  sourceType      String? // "web", "whatsapp", "bulk_upload"
+  sourceMessageId String?       @db.Uuid // Reference to raw_whatsapp_messages if applicable
   submittedAt     DateTime?
   approvedAt      DateTime?
-  approvedBy      String?         @db.Uuid
+  approvedBy      String?       @db.Uuid
   rejectedAt      DateTime?
-  rejectedBy      String?         @db.Uuid
+  rejectedBy      String?       @db.Uuid
   rejectionReason String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
   deletedAt       DateTime?
 
-  property        Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  agent           Agent?          @relation(fields: [agentId], references: [id])
-  user            User            @relation(fields: [userId], references: [id])
-  images          ListingImage[]
-  inquiries       Inquiry[]
-  tourRequests    TourRequest[]
-  reviews         Review[]        @relation("ListingReviews")
-  seoVariants     ListingSeoVariant[]
-  priceHistory    ListingPriceHistory[]
-  savedByUsers    SavedListing[]
-  recentViews     ListingRecentView[]
+  property     Property              @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  agent        Agent?                @relation(fields: [agentId], references: [id])
+  user         User                  @relation(fields: [userId], references: [id])
+  images       ListingImage[]
+  inquiries    Inquiry[]
+  tourRequests TourRequest[]
+  reviews      Review[]              @relation("ListingReviews")
+  seoVariants  ListingSeoVariant[]
+  priceHistory ListingPriceHistory[]
+  savedByUsers SavedListing[]
+  recentViews         ListingRecentView[]
+  serviceLeads        ServiceLead[]
+  bundleActivations   BundleActivation[]
+  providerAiMatchLogs ProviderAiMatchLog[]
 
   @@index([status, price])
   @@index([agentId])
@@ -507,39 +729,39 @@ model Listing {
 }
 
 model ListingImage {
-  id          String    @id @default(uuid()) @db.Uuid
-  listingId   String    @db.Uuid
-  url         String
+  id           String   @id @default(uuid()) @db.Uuid
+  listingId    String   @db.Uuid
+  url          String
   thumbnailUrl String?
-  altText     String?
-  isPrimary   Boolean   @default(false)
-  sortOrder   Int       @default(0)
-  createdAt   DateTime  @default(now())
+  altText      String?
+  isPrimary    Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
 
-  listing     Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@index([listingId])
   @@map("listing_images")
 }
 
 model ListingFeature {
-  id          String    @id @default(uuid()) @db.Uuid
-  propertyId  String    @db.Uuid
-  feature     String    // pool, gym, generator, security, borehole, solar, parking, elevator
+  id         String @id @default(uuid()) @db.Uuid
+  propertyId String @db.Uuid
+  feature    String // pool, gym, generator, security, borehole, solar, parking, elevator
 
-  property    Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@unique([propertyId, feature])
   @@map("listing_features")
 }
 
 model ListingPriceHistory {
-  id          String    @id @default(uuid()) @db.Uuid
-  listingId   String    @db.Uuid
-  price       BigInt    // In kobo
-  changedAt   DateTime  @default(now())
+  id        String   @id @default(uuid()) @db.Uuid
+  listingId String   @db.Uuid
+  price     BigInt // In kobo
+  changedAt DateTime @default(now())
 
-  listing     Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@index([listingId])
   @@map("listing_price_history")
@@ -550,17 +772,17 @@ model ListingPriceHistory {
 // ============================================
 
 model SavedSearch {
-  id              String    @id @default(uuid()) @db.Uuid
-  userId          String    @db.Uuid
-  name            String?
-  filters         Json      // Serialized Elasticsearch filter object
-  emailAlerts     Boolean   @default(true)
-  alertFrequency  String    @default("daily") // "instant", "daily", "weekly"
-  lastAlertSent   DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @db.Uuid
+  name           String?
+  filters        Json // Serialized Elasticsearch filter object
+  emailAlerts    Boolean   @default(true)
+  alertFrequency String    @default("daily") // "instant", "daily", "weekly"
+  lastAlertSent  DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("saved_searches")
@@ -617,27 +839,27 @@ model Notification {
 // ============================================
 
 model Inquiry {
-  id              String        @id @default(uuid()) @db.Uuid
-  listingId       String?       @db.Uuid
-  projectId       String?       @db.Uuid
-  buyerId         String        @db.Uuid
-  agentId         String?       @db.Uuid
-  source          InquirySource @default(web)
-  status          InquiryStatus @default(new)
-  message         String?
-  buyerName       String?
-  buyerEmail      String?
-  buyerPhone      String?
-  respondedAt     DateTime?
-  closedAt        DateTime?
-  closedReason    String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id           String        @id @default(uuid()) @db.Uuid
+  listingId    String?       @db.Uuid
+  projectId    String?       @db.Uuid
+  buyerId      String        @db.Uuid
+  agentId      String?       @db.Uuid
+  source       InquirySource @default(web)
+  status       InquiryStatus @default(new)
+  message      String?
+  buyerName    String?
+  buyerEmail   String?
+  buyerPhone   String?
+  respondedAt  DateTime?
+  closedAt     DateTime?
+  closedReason String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
-  listing         Listing?          @relation(fields: [listingId], references: [id])
-  project         DeveloperProject? @relation("ProjectInquiries", fields: [projectId], references: [id])
-  buyer           User              @relation("BuyerInquiries", fields: [buyerId], references: [id])
-  agent           Agent?            @relation("AgentInquiries", fields: [agentId], references: [id])
+  listing Listing?          @relation(fields: [listingId], references: [id])
+  project DeveloperProject? @relation("ProjectInquiries", fields: [projectId], references: [id])
+  buyer   User              @relation("BuyerInquiries", fields: [buyerId], references: [id])
+  agent   Agent?            @relation("AgentInquiries", fields: [agentId], references: [id])
 
   @@index([listingId])
   @@index([agentId, status])
@@ -646,26 +868,26 @@ model Inquiry {
 }
 
 model TourRequest {
-  id              String      @id @default(uuid()) @db.Uuid
-  listingId       String      @db.Uuid
-  buyerId         String      @db.Uuid
-  agentId         String?     @db.Uuid
-  tourType        TourType    @default(in_person)
-  status          TourStatus  @default(pending)
-  preferredDate   DateTime
-  preferredTime   String?     // e.g., "10:00 AM"
-  confirmedDate   DateTime?
-  notes           String?
-  buyerPhone      String?
-  completedAt     DateTime?
-  cancelledAt     DateTime?
-  cancelReason    String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id            String     @id @default(uuid()) @db.Uuid
+  listingId     String     @db.Uuid
+  buyerId       String     @db.Uuid
+  agentId       String?    @db.Uuid
+  tourType      TourType   @default(in_person)
+  status        TourStatus @default(pending)
+  preferredDate DateTime
+  preferredTime String? // e.g., "10:00 AM"
+  confirmedDate DateTime?
+  notes         String?
+  buyerPhone    String?
+  completedAt   DateTime?
+  cancelledAt   DateTime?
+  cancelReason  String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
-  listing         Listing     @relation(fields: [listingId], references: [id])
-  buyer           User        @relation("BuyerTours", fields: [buyerId], references: [id])
-  agent           Agent?      @relation("AgentTours", fields: [agentId], references: [id])
+  listing Listing @relation(fields: [listingId], references: [id])
+  buyer   User    @relation("BuyerTours", fields: [buyerId], references: [id])
+  agent   Agent?  @relation("AgentTours", fields: [agentId], references: [id])
 
   @@index([listingId])
   @@index([agentId, status])
@@ -678,17 +900,17 @@ model TourRequest {
 // ============================================
 
 model Message {
-  id          String    @id @default(uuid()) @db.Uuid
-  threadId    String    @db.Uuid // Groups conversation
-  senderId    String    @db.Uuid
-  receiverId  String    @db.Uuid
-  content     String
-  isRead      Boolean   @default(false)
-  readAt      DateTime?
-  createdAt   DateTime  @default(now())
+  id         String    @id @default(uuid()) @db.Uuid
+  threadId   String    @db.Uuid // Groups conversation
+  senderId   String    @db.Uuid
+  receiverId String    @db.Uuid
+  content    String
+  isRead     Boolean   @default(false)
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
 
-  sender      User      @relation("MessageSender", fields: [senderId], references: [id])
-  receiver    User      @relation("MessageReceiver", fields: [receiverId], references: [id])
+  sender   User @relation("MessageSender", fields: [senderId], references: [id])
+  receiver User @relation("MessageReceiver", fields: [receiverId], references: [id])
 
   @@index([threadId])
   @@index([senderId])
@@ -702,27 +924,27 @@ model Message {
 // ============================================
 
 model Review {
-  id            String    @id @default(uuid()) @db.Uuid
-  authorId      String    @db.Uuid
+  id                String   @id @default(uuid()) @db.Uuid
+  authorId          String   @db.Uuid
   // Polymorphic target
-  targetType    String    // "agent", "listing", "service_provider", "developer"
-  agentId       String?   @db.Uuid
-  listingId     String?   @db.Uuid
-  serviceProviderId String? @db.Uuid
-  developerId   String?   @db.Uuid
-  rating        Int       // 1-5
-  title         String?
-  content       String?
-  isVerified    Boolean   @default(false) // Verified purchase/interaction
-  isPublished   Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  targetType        String // "agent", "listing", "service_provider", "developer"
+  agentId           String?  @db.Uuid
+  listingId         String?  @db.Uuid
+  serviceProviderId String?  @db.Uuid
+  developerId       String?  @db.Uuid
+  rating            Int // 1-5
+  title             String?
+  content           String?
+  isVerified        Boolean  @default(false) // Verified purchase/interaction
+  isPublished       Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  author        User              @relation("ReviewAuthor", fields: [authorId], references: [id])
-  agent         Agent?            @relation("AgentReviews", fields: [agentId], references: [id])
-  listing       Listing?          @relation("ListingReviews", fields: [listingId], references: [id])
+  author          User             @relation("ReviewAuthor", fields: [authorId], references: [id])
+  agent           Agent?           @relation("AgentReviews", fields: [agentId], references: [id])
+  listing         Listing?         @relation("ListingReviews", fields: [listingId], references: [id])
   serviceProvider ServiceProvider? @relation("ServiceProviderReviews", fields: [serviceProviderId], references: [id])
-  developer     Developer?        @relation("DeveloperReviews", fields: [developerId], references: [id])
+  developer       Developer?       @relation("DeveloperReviews", fields: [developerId], references: [id])
 
   @@index([targetType])
   @@index([agentId])
@@ -737,41 +959,41 @@ model Review {
 // ============================================
 
 model Subscription {
-  id                String              @id @default(uuid()) @db.Uuid
-  agentId           String?             @unique @db.Uuid
-  developerId       String?             @unique @db.Uuid
-  plan              SubscriptionPlan
-  status            SubscriptionStatus  @default(active)
-  paystackSubCode   String?             // Paystack subscription code
+  id                 String             @id @default(uuid()) @db.Uuid
+  agentId            String?            @unique @db.Uuid
+  developerId        String?            @unique @db.Uuid
+  plan               SubscriptionPlan
+  status             SubscriptionStatus @default(active)
+  paystackSubCode    String? // Paystack subscription code
   paystackCustomerId String?
   currentPeriodStart DateTime
-  currentPeriodEnd  DateTime
-  cancelledAt       DateTime?
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  currentPeriodEnd   DateTime
+  cancelledAt        DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
-  agent             Agent?              @relation(fields: [agentId], references: [id])
-  developer         Developer?          @relation("DeveloperSubscription", fields: [developerId], references: [id])
+  agent     Agent?     @relation(fields: [agentId], references: [id])
+  developer Developer? @relation("DeveloperSubscription", fields: [developerId], references: [id])
 
   @@map("subscriptions")
 }
 
 model Payment {
-  id                String          @id @default(uuid()) @db.Uuid
-  agentId           String?         @db.Uuid
-  type              PaymentType
-  gateway           PaymentGateway  @default(paystack)
-  status            PaymentStatus   @default(pending)
-  amount            BigInt          // In kobo
-  currency          String          @default("NGN")
-  reference         String          @unique // Gateway reference
-  gatewayResponse   Json?           // Full gateway response
-  metadata          Json?           // Additional data (listing_id for boost, etc.)
-  paidAt            DateTime?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id              String         @id @default(uuid()) @db.Uuid
+  agentId         String?        @db.Uuid
+  type            PaymentType
+  gateway         PaymentGateway @default(paystack)
+  status          PaymentStatus  @default(pending)
+  amount          BigInt // In kobo
+  currency        String         @default("NGN")
+  reference       String         @unique // Gateway reference
+  gatewayResponse Json? // Full gateway response
+  metadata        Json? // Additional data (listing_id for boost, etc.)
+  paidAt          DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
-  agent             Agent?          @relation(fields: [agentId], references: [id])
+  agent Agent? @relation(fields: [agentId], references: [id])
 
   @@index([reference])
   @@index([agentId])
@@ -780,45 +1002,256 @@ model Payment {
 }
 
 // ============================================
-// SERVICE DIRECTORY MODULE
+// SERVICEHUB MODULE (spec §2 — 9 tables)
 // ============================================
 
 model ServiceProvider {
-  id              String          @id @default(uuid()) @db.Uuid
-  userId          String          @unique @db.Uuid
-  businessName    String
-  slug            String          @unique
-  category        ServiceCategory
-  description     String?
-  services        String[]        // Array of services offered
-  address         String?
+  id           String @id @default(uuid()) @db.Uuid
+  userId       String @unique @db.Uuid
+  businessName String
+  slug         String @unique
+  category     ServiceCategory
+  /// Sub-category codes, e.g. title_perfection (§1.4).
+  subCategories String[] @default([])
+  description   String?
+  /// JSON array: { name, description?, priceFrom?, priceTo?, unit?, deliveryDays? } (§2.2).
+  servicesOffered Json @default("[]")
+  serviceAreas    String[] @default([])
   city            String
   state           String
-  country         String          @default("Nigeria")
-  phone           String?
-  email           String?
-  website         String?
-  logoUrl         String?
-  galleryImages   String[]
-  rating          Float           @default(0)
-  reviewCount     Int             @default(0)
-  isVerified      Boolean         @default(false)
-  isPremium       Boolean         @default(false)
-  premiumUntil    DateTime?
-  viewCount       Int             @default(0)
-  leadCount       Int             @default(0)
-  socialLinks     Json?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  deletedAt       DateTime?
+  country         String  @default("Nigeria")
+  /// PostGIS geography(Point,4326) — GIST index in migration.
+  geom            Unsupported("geography(Point,4326)")?
 
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reviews         Review[]        @relation("ServiceProviderReviews")
+  phone         String?
+  whatsappPhone String?
+  email         String?
+  website       String?
+
+  verificationLevel ProviderVerificationLevel @default(basic)
+  isVerified        Boolean                   @default(false)
+  kycDocuments      Json?
+  licenseNumber     String?
+  licenseBody       String?
+
+  rating              Float @default(0)
+  reviewCount         Int   @default(0)
+  viewCount           Int   @default(0)
+  leadCount           Int   @default(0)
+  completedJobCount   Int   @default(0)
+  responseRatePercent Int   @default(0)
+  avgResponseHours    Float?
+  aiMatchScore        Float @default(0)
+
+  isFeatured    Boolean   @default(false)
+  featuredUntil DateTime?
+
+  subscriptionTier ProviderTier @default(free)
+
+  whatsappConnected Boolean @default(false)
+
+  /// JSON array of portfolio objects (§2.2).
+  portfolioItems Json @default("[]")
+  teamSize       Int?
+  foundedYear    Int?
+
+  /// Legacy — retained for gradual UI migration.
+  address       String?
+  logoUrl       String?
+  galleryImages String[] @default([])
+  socialLinks   Json?
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviews Review[] @relation("ServiceProviderReviews")
+
+  leads               ServiceLead[]
+  serviceReviews      ServiceReview[]
+  whatsappConnections ProviderWhatsAppConnection[]
+  availabilitySlots   ProviderAvailability[]
+  aiMatchLogs         ProviderAiMatchLog[]
+  preferredByAgents   AgentPreferredPartner[]
 
   @@index([category])
   @@index([city, state])
-  @@index([isPremium])
+  @@index([isFeatured])
+  @@index([subscriptionTier])
+  @@index([aiMatchScore])
   @@map("service_providers")
+}
+
+model ServiceLead {
+  id                String            @id @default(uuid()) @db.Uuid
+  serviceProviderId String            @db.Uuid
+  clientUserId      String?           @db.Uuid
+  clientName        String
+  clientPhone       String
+  clientEmail       String?
+  source            ServiceLeadSource
+  listingId         String?           @db.Uuid
+  projectId         String?           @db.Uuid
+  bundleId          String?           @db.Uuid
+  serviceRequested  String
+  message           String
+  budget            BigInt?
+  timeline          String?
+  location          String
+  status            ServiceLeadStatus @default(pending)
+  aiScore           Float?
+  aiSummary         String?
+  quotedAmountKobo  BigInt?
+  finalAmountKobo   BigInt?
+  respondedAt       DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime          @default(now())
+
+  serviceProvider ServiceProvider  @relation(fields: [serviceProviderId], references: [id], onDelete: Cascade)
+  client          User?            @relation("ServiceLeadClient", fields: [clientUserId], references: [id], onDelete: SetNull)
+  listing         Listing?         @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  project         DeveloperProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  bundle          ServiceBundle?   @relation(fields: [bundleId], references: [id], onDelete: SetNull)
+  serviceReview   ServiceReview?
+
+  @@index([serviceProviderId])
+  @@index([clientUserId])
+  @@index([listingId])
+  @@index([status])
+  @@index([source])
+  @@map("service_leads")
+}
+
+model ServiceBundle {
+  id              String                @id @default(uuid()) @db.Uuid
+  name            String
+  slug            String                @unique
+  description     String
+  categories      ServiceCategory[]
+  priceFromKobo   BigInt
+  priceToKobo     BigInt
+  triggerContext  ServiceBundleTrigger
+  isActive        Boolean               @default(true)
+  activationCount Int                   @default(0)
+
+  leads       ServiceLead[]
+  activations BundleActivation[]
+
+  @@index([isActive])
+  @@index([triggerContext])
+  @@map("service_bundles")
+}
+
+model BundleActivation {
+  id               String                 @id @default(uuid()) @db.Uuid
+  bundleId         String                 @db.Uuid
+  clientUserId     String                 @db.Uuid
+  listingId        String?                @db.Uuid
+  status           BundleActivationStatus
+  matchedProviders Json
+  totalAmountKobo  BigInt?
+  platformFeeKobo  BigInt?
+  createdAt        DateTime               @default(now())
+
+  bundle  ServiceBundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  client  User          @relation(fields: [clientUserId], references: [id], onDelete: Cascade)
+  listing Listing?      @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  @@index([bundleId])
+  @@index([clientUserId])
+  @@map("bundle_activations")
+}
+
+model ServiceReview {
+  id                String   @id @default(uuid()) @db.Uuid
+  serviceLeadId     String   @unique @db.Uuid
+  serviceProviderId String   @db.Uuid
+  reviewerId        String   @db.Uuid
+  overallRating     Int
+  qualityRating     Int
+  communicationRating Int
+  timelinessRating  Int
+  valueRating       Int
+  title             String
+  body              String
+  isJobVerified     Boolean  @default(false)
+  providerResponse  String?
+  createdAt         DateTime @default(now())
+
+  serviceLead     ServiceLead     @relation(fields: [serviceLeadId], references: [id], onDelete: Cascade)
+  serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id], onDelete: Cascade)
+  reviewer        User            @relation("ServiceReviewReviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@index([serviceProviderId])
+  @@index([reviewerId])
+  @@map("service_reviews")
+}
+
+model ProviderWhatsAppConnection {
+  id                   String                 @id @default(uuid()) @db.Uuid
+  serviceProviderId    String                 @db.Uuid
+  phoneNumber          String
+  evolutionInstanceName String
+  status               ProviderWhatsAppStatus
+  monitoredGroups      Json                   @default("[]")
+  extractedLeadsCount  Int                    @default(0)
+  connectedAt          DateTime               @default(now())
+  lastActiveAt         DateTime?
+
+  serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id], onDelete: Cascade)
+
+  @@index([serviceProviderId])
+  @@map("provider_whatsapp_connections")
+}
+
+model ProviderAvailability {
+  id                String   @id @default(uuid()) @db.Uuid
+  serviceProviderId String   @db.Uuid
+  date              DateTime @db.Date
+  isAvailable       Boolean
+  slots             Json?
+  note              String?
+
+  serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id], onDelete: Cascade)
+
+  @@index([serviceProviderId, date])
+  @@map("provider_availability")
+}
+
+model ProviderAiMatchLog {
+  id                String   @id @default(uuid()) @db.Uuid
+  serviceProviderId String   @db.Uuid
+  listingId         String?  @db.Uuid
+  matchScore        Float
+  scoreFactors      Json
+  rankPosition      Int      @map("position")
+  wasClicked        Boolean  @default(false)
+  convertedToLead   Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id], onDelete: Cascade)
+  listing         Listing?        @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  @@index([serviceProviderId])
+  @@index([listingId])
+  @@map("provider_ai_match_log")
+}
+
+model AgentPreferredPartner {
+  id                String   @id @default(uuid()) @db.Uuid
+  agentId           String   @db.Uuid
+  serviceProviderId String   @db.Uuid
+  referralCount     Int      @default(0)
+  earnedCreditsKobo BigInt   @default(0)
+  createdAt         DateTime @default(now())
+
+  agent           Agent           @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, serviceProviderId])
+  @@index([agentId])
+  @@map("agent_preferred_partners")
 }
 
 // ============================================
@@ -826,30 +1259,30 @@ model ServiceProvider {
 // ============================================
 
 model RawWhatsAppMessage {
-  id              String                  @id @default(uuid()) @db.Uuid
-  messageId       String                  @unique // WhatsApp message ID
-  groupId         String?                 // WhatsApp group ID
-  groupName       String?
-  senderPhone     String
-  senderName      String?
-  messageType     String                  // text, image, video, document
-  textContent     String?
-  mediaUrls       String[]
-  status          WhatsAppMessageStatus   @default(PENDING)
-  extractedData   Json?                   // AI-extracted structured data
-  confidenceScore Float?                  // 0.0 - 1.0
-  extractionError String?
-  processedAt     DateTime?
-  approvedAt      DateTime?
-  approvedBy      String?                 @db.Uuid
-  rejectedAt      DateTime?
-  rejectedBy      String?                 @db.Uuid
-  rejectionReason String?
-  createdListingId String?                @db.Uuid
-  duplicateOfId   String?                 @db.Uuid // Reference to duplicate message
-  receivedAt      DateTime                @default(now())
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @updatedAt
+  id               String                @id @default(uuid()) @db.Uuid
+  messageId        String                @unique // WhatsApp message ID
+  groupId          String? // WhatsApp group ID
+  groupName        String?
+  senderPhone      String
+  senderName       String?
+  messageType      String // text, image, video, document
+  textContent      String?
+  mediaUrls        String[]
+  status           WhatsAppMessageStatus @default(PENDING)
+  extractedData    Json? // AI-extracted structured data
+  confidenceScore  Float? // 0.0 - 1.0
+  extractionError  String?
+  processedAt      DateTime?
+  approvedAt       DateTime?
+  approvedBy       String?               @db.Uuid
+  rejectedAt       DateTime?
+  rejectedBy       String?               @db.Uuid
+  rejectionReason  String?
+  createdListingId String?               @db.Uuid
+  duplicateOfId    String?               @db.Uuid // Reference to duplicate message
+  receivedAt       DateTime              @default(now())
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
 
   @@index([status])
   @@index([messageId])
@@ -859,14 +1292,14 @@ model RawWhatsAppMessage {
 }
 
 model WhatsAppGroup {
-  id              String    @id @default(uuid()) @db.Uuid
-  groupId         String    @unique // WhatsApp group ID
-  groupName       String
-  isMonitored     Boolean   @default(true)
-  messageCount    Int       @default(0)
-  lastActivityAt  DateTime?
-  addedAt         DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String    @id @default(uuid()) @db.Uuid
+  groupId        String    @unique // WhatsApp group ID
+  groupName      String
+  isMonitored    Boolean   @default(true)
+  messageCount   Int       @default(0)
+  lastActivityAt DateTime?
+  addedAt        DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@map("whatsapp_groups")
 }
@@ -876,28 +1309,28 @@ model WhatsAppGroup {
 // ============================================
 
 model ListingSeoVariant {
-  id              String            @id @default(uuid()) @db.Uuid
-  listingId       String            @db.Uuid
-  variantType     String            // luxury, investment, family, diaspora, urgency, social_x, social_li, social_fb, whatsapp, seo_long
-  seoTitle        String?           // 60 chars max
-  metaDescription String?           // 160 chars max
+  id              String           @id @default(uuid()) @db.Uuid
+  listingId       String           @db.Uuid
+  variantType     String // luxury, investment, family, diaspora, urgency, social_x, social_li, social_fb, whatsapp, seo_long
+  seoTitle        String? // 60 chars max
+  metaDescription String? // 160 chars max
   hashtags        String[]
-  fullCopy        String?           // 200-1200 words
-  socialCaption   String?           // Platform-appropriate shortened version
+  fullCopy        String? // 200-1200 words
+  socialCaption   String? // Platform-appropriate shortened version
   tone            String?
   targetAudience  String?
-  status          SeoVariantStatus  @default(draft)
+  status          SeoVariantStatus @default(draft)
   approvedAt      DateTime?
-  approvedBy      String?           @db.Uuid
+  approvedBy      String?          @db.Uuid
   rejectedAt      DateTime?
-  rejectedBy      String?           @db.Uuid
+  rejectedBy      String?          @db.Uuid
   rejectionReason String?
   scheduledAt     DateTime?
   postedAt        DateTime?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
-  listing         Listing           @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listing          Listing              @relation(fields: [listingId], references: [id], onDelete: Cascade)
   postingSchedules SeoPostingSchedule[]
 
   @@index([listingId])
@@ -907,20 +1340,20 @@ model ListingSeoVariant {
 }
 
 model SeoPostingSchedule {
-  id              String      @id @default(uuid()) @db.Uuid
-  variantId       String      @db.Uuid
-  channel         SeoChannel
-  scheduledAt     DateTime
-  postedAt        DateTime?
-  externalPostId  String?     // Post ID from external platform
-  status          String      @default("scheduled") // scheduled, posted, failed
-  errorMessage    String?
-  engagementData  Json?       // { impressions, clicks, likes, shares, comments }
-  lastPolledAt    DateTime?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id             String     @id @default(uuid()) @db.Uuid
+  variantId      String     @db.Uuid
+  channel        SeoChannel
+  scheduledAt    DateTime
+  postedAt       DateTime?
+  externalPostId String? // Post ID from external platform
+  status         String     @default("scheduled") // scheduled, posted, failed
+  errorMessage   String?
+  engagementData Json? // { impressions, clicks, likes, shares, comments }
+  lastPolledAt   DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
-  variant         ListingSeoVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  variant ListingSeoVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
   @@index([variantId])
   @@index([channel])
@@ -934,19 +1367,19 @@ model SeoPostingSchedule {
 // ============================================
 
 model AiRequestLog {
-  id              String    @id @default(uuid()) @db.Uuid
-  endpoint        String    // /extract-listing, /generate-seo-variants, etc.
-  model           String    // claude-3.5-sonnet, grok, gpt-4o
-  promptTokens    Int
+  id               String   @id @default(uuid()) @db.Uuid
+  endpoint         String // /extract-listing, /generate-seo-variants, etc.
+  model            String // claude-3.5-sonnet, grok, gpt-4o
+  promptTokens     Int
   completionTokens Int
-  totalTokens     Int
-  costUsd         Float     // Cost in USD
-  durationMs      Int       // Request duration
-  status          String    // success, error, rate_limited
-  errorMessage    String?
-  requestPayload  Json?     // Sanitized request (no PII)
-  responsePayload Json?     // Sanitized response
-  createdAt       DateTime  @default(now())
+  totalTokens      Int
+  costUsd          Float // Cost in USD
+  durationMs       Int // Request duration
+  status           String // success, error, rate_limited
+  errorMessage     String?
+  requestPayload   Json? // Sanitized request (no PII)
+  responsePayload  Json? // Sanitized response
+  createdAt        DateTime @default(now())
 
   @@index([endpoint])
   @@index([model])
@@ -959,20 +1392,20 @@ model AiRequestLog {
 // ============================================
 
 model AuditLog {
-  id          String    @id @default(uuid()) @db.Uuid
-  actorId     String?   @db.Uuid
-  actorEmail  String?
-  actorRole   UserRole?
-  action      String    // e.g., "user.create", "listing.approve", "kyc.verify"
-  targetType  String?   // e.g., "user", "listing", "agent"
-  targetId    String?   @db.Uuid
-  changes     Json?     // { before: {}, after: {} }
-  ipAddress   String?
-  userAgent   String?
-  metadata    Json?
-  createdAt   DateTime  @default(now())
+  id         String    @id @default(uuid()) @db.Uuid
+  actorId    String?   @db.Uuid
+  actorEmail String?
+  actorRole  UserRole?
+  action     String // e.g., "user.create", "listing.approve", "kyc.verify"
+  targetType String? // e.g., "user", "listing", "agent"
+  targetId   String?   @db.Uuid
+  changes    Json? // { before: {}, after: {} }
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json?
+  createdAt  DateTime  @default(now())
 
-  actor       User?     @relation(fields: [actorId], references: [id])
+  actor User? @relation(fields: [actorId], references: [id])
 
   @@index([actorId, createdAt])
   @@index([action])

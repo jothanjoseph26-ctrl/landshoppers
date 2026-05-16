@@ -47,7 +47,39 @@ async function main() {
     );
   }
 
-  console.log("verify-postgis: OK (postgis + geom columns + GIST indexes)");
+  const [{ exists: providerGeom }] =
+    await prisma.$queryRaw<{ exists: boolean }[]>`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.columns c
+      WHERE c.table_schema = 'public'
+        AND c.table_name = 'service_providers'
+        AND c.column_name = 'geom'
+    ) AS exists
+  `;
+
+  if (providerGeom) {
+    const spIdx = await prisma.$queryRaw<{ indexname: string }[]>`
+      SELECT indexname::text AS indexname
+      FROM pg_indexes
+      WHERE schemaname = 'public'
+        AND tablename = 'service_providers'
+        AND indexname = 'service_providers_geom_gix'
+    `;
+    if (spIdx.length !== 1) {
+      throw new Error(
+        "verify-postgis: service_providers.geom exists but GIST index service_providers_geom_gix is missing",
+      );
+    }
+  } else {
+    console.warn(
+      "verify-postgis: service_providers.geom not present yet — skipping ServiceHub provider geom gate (Agent 1 migration)",
+    );
+  }
+
+  console.log(
+    "verify-postgis: OK (postgis + listings/project geom + GIST; ServiceHub provider geom enforced when column exists)",
+  );
 }
 
 main()
