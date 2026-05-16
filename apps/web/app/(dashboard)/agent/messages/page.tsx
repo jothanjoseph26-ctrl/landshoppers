@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { Suspense, useCallback, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
@@ -22,7 +22,7 @@ import {
 import { usePortalData } from "@/lib/api/use-portal-data"
 import { formatRelativeTime } from "@/lib/format"
 
-export default function AgentMessagesPage() {
+function AgentMessagesPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const threadFromUrl = searchParams.get("thread")
@@ -202,5 +202,13 @@ export default function AgentMessagesPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function AgentMessagesPage() {
+  return (
+    <Suspense fallback={<PortalLoading label="Loading inbox…" />}>
+      <AgentMessagesPageInner />
+    </Suspense>
   )
 }
