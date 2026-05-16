@@ -118,7 +118,7 @@ export default function DeveloperLeadsPage() {
     () =>
       fetchDeveloperInquiries({
         page: 1,
-        pageSize: 100,
+        pageSize: 50,
         status: statusFilter === "all" ? undefined : statusFilter,
       }).then((r) => r.data),
     { revalidateOnFocus: true },

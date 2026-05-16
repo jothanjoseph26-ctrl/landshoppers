@@ -87,7 +87,7 @@ export default function DeveloperKycPage() {
 
   const projectsKey = token ? (["developer-kyc-projects"] as const) : null
   const { data: projectsRes } = useSWR(projectsKey, () =>
-    fetchDeveloperProjects({ page: 1, pageSize: 100 }).then((r) => r),
+    fetchDeveloperProjects({ page: 1, pageSize: 50 }).then((r) => r),
   )
 
   const detailKey = token && activeId && sheetOpen ? (["developer-kyc-doc", activeId] as const) : null

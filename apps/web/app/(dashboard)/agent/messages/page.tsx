@@ -35,7 +35,7 @@ function AgentMessagesPageInner() {
 
   const messages = usePortalData(
     selectedThreadId ? `agent:messages:thread:${selectedThreadId}` : null,
-    () => fetchAgentThreadMessages(selectedThreadId!, { page: 1, pageSize: 100 }),
+    () => fetchAgentThreadMessages(selectedThreadId!, { page: 1, pageSize: 50 }),
   )
 
   const [draft, setDraft] = useState("")

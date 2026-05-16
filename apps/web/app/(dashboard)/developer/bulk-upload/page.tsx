@@ -55,7 +55,7 @@ export default function DeveloperBulkUploadPage() {
 
   const projectsKey = token ? (["developer-bulk-projects"] as const) : null
   const { data: projectsRes } = useSWR(projectsKey, () =>
-    fetchDeveloperProjects({ page: 1, pageSize: 100 }).then((r) => r),
+    fetchDeveloperProjects({ page: 1, pageSize: 50 }).then((r) => r),
   )
 
   const uploadsKey = token ? (["developer-bulk-uploads"] as const) : null
@@ -66,7 +66,7 @@ export default function DeveloperBulkUploadPage() {
   const rowsKey =
     token && activeUpload?.id ? (["developer-bulk-rows", activeUpload.id] as const) : null
   const { data: rowsRes, mutate: mutateRows } = useSWR(rowsKey, () =>
-    fetchDeveloperBulkUploadRows(activeUpload!.id, { page: 1, pageSize: 100 }).then((r) => r),
+    fetchDeveloperBulkUploadRows(activeUpload!.id, { page: 1, pageSize: 50 }).then((r) => r),
   )
 
   const projects = projectsRes?.data ?? []

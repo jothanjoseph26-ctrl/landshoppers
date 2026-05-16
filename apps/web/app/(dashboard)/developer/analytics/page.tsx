@@ -77,7 +77,7 @@ export default function DeveloperAnalyticsPage() {
 
   const projectsKey = token ? (["developer-analytics-projects"] as const) : null
   const { data: projectsRes } = useSWR(projectsKey, () =>
-    fetchDeveloperProjects({ page: 1, pageSize: 100 }).then((r) => r),
+    fetchDeveloperProjects({ page: 1, pageSize: 50 }).then((r) => r),
   )
 
   const projects = projectsRes?.data ?? []
