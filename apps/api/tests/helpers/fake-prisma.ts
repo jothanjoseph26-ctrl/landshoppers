@@ -40,6 +40,10 @@ type ProfileRow = {
   state: string | null;
   country: string | null;
   avatarUrl: string | null;
+  notifyEmail: boolean;
+  notifySms: boolean;
+  notifyPush: boolean;
+  preferences: Json | null;
 };
 
 type AgentRow = {
@@ -115,11 +119,30 @@ type ServiceProviderRow = {
   isFeatured: boolean;
   featuredUntil: Date | null;
   whatsappPhone: string | null;
+  whatsappConnected: boolean;
+  licenseNumber: string | null;
+  licenseBody: string | null;
+  kycDocuments: Json | null;
   portfolioItems: Json;
   socialLinks: Json | null;
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  /** WGS84 from PostGIS geom — used by directory map coord tests. */
+  geomLatitude: number | null;
+  geomLongitude: number | null;
+};
+
+type ProviderWhatsAppConnectionRow = {
+  id: string;
+  serviceProviderId: string;
+  phoneNumber: string;
+  evolutionInstanceName: string;
+  status: string;
+  monitoredGroups: Json;
+  extractedLeadsCount: number;
+  connectedAt: Date;
+  lastActiveAt: Date | null;
 };
 
 type PropertyRow = {
@@ -400,6 +423,22 @@ type SubscriptionRow = {
   updatedAt: Date;
 };
 
+type PaymentRow = {
+  id: string;
+  agentId: string | null;
+  type: string;
+  gateway: string;
+  status: string;
+  amount: bigint;
+  currency: string;
+  reference: string;
+  gatewayResponse: Json | null;
+  metadata: Json | null;
+  paidAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 type AuditLogRow = {
   id: string;
   actorId: string | null;
@@ -413,6 +452,14 @@ type AuditLogRow = {
   userAgent: string | null;
   metadata: Json | null;
   createdAt: Date;
+};
+
+type PlatformSettingsRow = {
+  id: string;
+  maintenanceMode: boolean;
+  whatsappAutoApproveMinScore: number | null;
+  updatedAt: Date;
+  updatedBy: string | null;
 };
 
 type RawWhatsAppMessageRow = {
@@ -575,15 +622,18 @@ type Tables = {
   developerMemberships: DeveloperMembershipRow[];
   developerInvites: DeveloperInviteRow[];
   subscriptions: SubscriptionRow[];
+  payments: PaymentRow[];
   auditLogs: AuditLogRow[];
   rawWhatsAppMessages: RawWhatsAppMessageRow[];
   listingSeoVariants: ListingSeoVariantRow[];
   serviceLeads: ServiceLeadRow[];
   serviceReviews: ServiceReviewRow[];
+  providerWhatsAppConnections: ProviderWhatsAppConnectionRow[];
   notifications: NotificationRow[];
   providerAvailability: ProviderAvailabilityRow[];
   serviceBundles: ServiceBundleRow[];
   bundleActivations: BundleActivationRow[];
+  platformSettings: PlatformSettingsRow[];
 };
 
 const tables: Tables = createEmptyTables();
@@ -617,10 +667,20 @@ function createEmptyTables(): Tables {
     listingSeoVariants: [],
     serviceLeads: [],
     serviceReviews: [],
+    providerWhatsAppConnections: [],
     notifications: [],
     providerAvailability: [],
     serviceBundles: [],
     bundleActivations: [],
+    platformSettings: [
+      {
+        id: "default",
+        maintenanceMode: false,
+        whatsappAutoApproveMinScore: null,
+        updatedAt: new Date(),
+        updatedBy: null,
+      },
+    ],
   };
 }
 
@@ -918,6 +978,24 @@ function attachIncludes<T extends Record<string, unknown>>(
       out.user = u ? clone(u) : null;
     }
   }
+  if (table === "serviceProviders") {
+    if (include.user) {
+      const u = tables.users.find((r) => r.id === out["userId"]);
+      const sub =
+        include.user === true ? ({ profile: true } as IncludeSpec) : (include.user as { include?: IncludeSpec }).include;
+      out.user = u ? (attachIncludes(u, "users", sub) as unknown) : null;
+    }
+  }
+  if (table === "serviceReviews") {
+    if (include.reviewer) {
+      const u = tables.users.find((r) => r.id === out["reviewerId"]);
+      const sub =
+        include.reviewer === true
+          ? ({ profile: true } as IncludeSpec)
+          : (include.reviewer as { include?: IncludeSpec }).include;
+      out.reviewer = u ? (attachIncludes(u, "users", sub) as unknown) : null;
+    }
+  }
   return out;
 }
 
@@ -1148,6 +1226,10 @@ userModel.create = async ({ data, include }: { data: Record<string, unknown>; in
       state: (p.state as string | null) ?? null,
       country: (p.country as string | null) ?? "Nigeria",
       avatarUrl: (p.avatarUrl as string | null) ?? null,
+      notifyEmail: (p.notifyEmail as boolean | undefined) ?? true,
+      notifySms: (p.notifySms as boolean | undefined) ?? true,
+      notifyPush: (p.notifyPush as boolean | undefined) ?? false,
+      preferences: (p.preferences as Json | null) ?? null,
     });
   }
   if (agent && typeof agent === "object") {
@@ -1230,6 +1312,10 @@ userModel.create = async ({ data, include }: { data: Record<string, unknown>; in
       isFeatured: Boolean(s.isFeatured),
       featuredUntil: (s.featuredUntil as Date | null) ?? null,
       whatsappPhone: (s.whatsappPhone as string | null) ?? null,
+      whatsappConnected: Boolean(s.whatsappConnected),
+      licenseNumber: (s.licenseNumber as string | null) ?? null,
+      licenseBody: (s.licenseBody as string | null) ?? null,
+      kycDocuments: (s.kycDocuments as Json | null) ?? null,
       portfolioItems: (s.portfolioItems as Json | undefined) ?? [],
       socialLinks: (s.socialLinks as Json | null) ?? null,
       deletedAt: null,
@@ -1597,6 +1683,29 @@ const subscriptionModel = buildModel<SubscriptionRow>(
   [["developerId"], ["agentId"]],
 );
 
+const paymentModel = buildModel<PaymentRow>(
+  "payments",
+  (data) => {
+    const now = new Date();
+    return {
+      id: (data["id"] as string) ?? randomUUID(),
+      agentId: (data["agentId"] as string | null) ?? null,
+      type: (data["type"] as string) ?? "subscription",
+      gateway: (data["gateway"] as string) ?? "paystack",
+      status: (data["status"] as string) ?? "pending",
+      amount: (data["amount"] as bigint | undefined) ?? 0n,
+      currency: (data["currency"] as string) ?? "NGN",
+      reference: (data["reference"] as string) ?? `pay_${randomUUID().slice(0, 8)}`,
+      gatewayResponse: (data["gatewayResponse"] as Json | null) ?? null,
+      metadata: (data["metadata"] as Json | null) ?? null,
+      paidAt: (data["paidAt"] as Date | null) ?? null,
+      createdAt: (data["createdAt"] as Date | undefined) ?? now,
+      updatedAt: (data["updatedAt"] as Date | undefined) ?? now,
+    };
+  },
+  [["agentId"], ["reference"]],
+);
+
 const auditLogModel = buildModel<AuditLogRow>(
   "auditLogs",
   (data) => ({
@@ -1755,14 +1864,36 @@ const serviceProviderModel = buildModel<ServiceProviderRow>(
       isFeatured: Boolean(data["isFeatured"]),
       featuredUntil: (data["featuredUntil"] as Date | null) ?? null,
       whatsappPhone: (data["whatsappPhone"] as string | null) ?? null,
+      whatsappConnected: Boolean(data["whatsappConnected"]),
+      licenseNumber: (data["licenseNumber"] as string | null) ?? null,
+      licenseBody: (data["licenseBody"] as string | null) ?? null,
+      kycDocuments: (data["kycDocuments"] as Json | null) ?? null,
       portfolioItems: (data["portfolioItems"] as Json | undefined) ?? [],
       socialLinks: (data["socialLinks"] as Json | null) ?? null,
       deletedAt: (data["deletedAt"] as Date | null) ?? null,
       createdAt: (data["createdAt"] as Date | undefined) ?? now,
       updatedAt: (data["updatedAt"] as Date | undefined) ?? now,
+      geomLatitude: (data["geomLatitude"] as number | null | undefined) ?? null,
+      geomLongitude: (data["geomLongitude"] as number | null | undefined) ?? null,
     };
   },
   [["userId"], ["slug"]],
+);
+
+const providerWhatsAppConnectionModel = buildModel<ProviderWhatsAppConnectionRow>(
+  "providerWhatsAppConnections",
+  (data) => ({
+    id: (data["id"] as string) ?? randomUUID(),
+    serviceProviderId: data["serviceProviderId"] as string,
+    phoneNumber: (data["phoneNumber"] as string) ?? "",
+    evolutionInstanceName: (data["evolutionInstanceName"] as string) ?? "stub",
+    status: (data["status"] as string) ?? "connected",
+    monitoredGroups: (data["monitoredGroups"] as Json | undefined) ?? [],
+    extractedLeadsCount: (data["extractedLeadsCount"] as number | undefined) ?? 0,
+    connectedAt: (data["connectedAt"] as Date | undefined) ?? new Date(),
+    lastActiveAt: (data["lastActiveAt"] as Date | null) ?? null,
+  }),
+  [["id"]],
 );
 
 const serviceProviderModelWithGroupBy = {
@@ -1941,13 +2072,79 @@ function extractTaggedTemplateSqlValues(parts: unknown, rest: unknown[]): unknow
     "values" in parts &&
     Array.isArray((parts as { values: unknown }).values)
   ) {
-    return [...((parts as { values: unknown[] }).values)];
+    const embedded = (parts as { values: unknown[] }).values;
+    return [...embedded, ...rest];
   }
   // Tagged template: `...${x}` → (strings, ...exprValues)
   if (Array.isArray(parts) && parts !== null && "raw" in parts) {
     return rest;
   }
   return rest;
+}
+
+function querySqlText(parts: unknown): string {
+  if (Array.isArray(parts) && parts !== null && "raw" in parts) {
+    return (parts as TemplateStringsArray).raw.join("?");
+  }
+  if (typeof parts === "object" && parts !== null) {
+    const maybe = parts as { strings?: string[]; sql?: string; text?: string };
+    if (Array.isArray(maybe.strings)) return maybe.strings.join("?");
+    if (typeof maybe.sql === "string") return maybe.sql;
+    if (typeof maybe.text === "string") return maybe.text;
+  }
+  return String(parts ?? "");
+}
+
+function isProviderCoordQuery(parts: unknown, flat: unknown[]): boolean {
+  const sql = querySqlText(parts);
+  if (sql.includes("ST_Y") || sql.includes("ST_X")) return true;
+  return flat.some((v) => String(v).includes("ST_Y") || String(v).includes("ST_X"));
+}
+
+function uuidsFromSqlText(parts: unknown): string[] {
+  const text = querySqlText(parts);
+  const matches = text.match(
+    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+  );
+  return matches ? matches.filter(uuidLike) : [];
+}
+
+function uuidValuesFromQueryArgs(values: unknown[]): string[] {
+  const out: string[] = [];
+  for (const v of values) {
+    if (uuidLike(v)) out.push(v);
+    else if (Array.isArray(v)) {
+      for (const x of v) {
+        if (uuidLike(x)) out.push(x);
+      }
+    }
+  }
+  return out;
+}
+
+function syntheticProviderCoordinates(
+  parts: unknown,
+  values: unknown[],
+): { id: string; latitude: number; longitude: number }[] {
+  let ids = [...new Set([...uuidValuesFromQueryArgs(values), ...uuidsFromSqlText(parts)])];
+  // Prisma.join embeds ids in Sql text — when not flattened, return all geocoded rows.
+  if (ids.length === 0) {
+    ids = tables.serviceProviders.filter((p) => !p.deletedAt).map((p) => p.id);
+  }
+  const out: { id: string; latitude: number; longitude: number }[] = [];
+  for (const id of ids) {
+    const sp = tables.serviceProviders.find((p) => p.id === id && !p.deletedAt);
+    if (
+      sp &&
+      sp.geomLatitude !== null &&
+      sp.geomLongitude !== null &&
+      sp.geomLatitude !== undefined &&
+      sp.geomLongitude !== undefined
+    ) {
+      out.push({ id, latitude: sp.geomLatitude, longitude: sp.geomLongitude });
+    }
+  }
+  return out;
 }
 
 function syntheticServicehubCandidates(values: unknown[]): { id: string; distance_m: number }[] {
@@ -1970,10 +2167,45 @@ function syntheticServicehubCandidates(values: unknown[]): { id: string; distanc
 export const fakePrisma = {
   user: userModel,
   userProfile: {
-    findFirst: async () => null,
+    findFirst: async (args?: { where?: { userId?: string } }) => {
+      const uid = args?.where?.userId;
+      if (!uid) return null;
+      const row = tables.profiles.find((p) => p.userId === uid);
+      return row ? clone(row) : null;
+    },
     findUnique: async (args: { where: { userId: string } }) => {
       const row = tables.profiles.find((p) => p.userId === args.where.userId);
       return row ? clone(row) : null;
+    },
+    create: async ({ data }: { data: Record<string, unknown> }) => {
+      const row: ProfileRow = {
+        id: randomUUID(),
+        userId: data.userId as string,
+        firstName: (data.firstName as string | null) ?? null,
+        lastName: (data.lastName as string | null) ?? null,
+        city: (data.city as string | null) ?? null,
+        state: (data.state as string | null) ?? null,
+        country: (data.country as string | null) ?? "Nigeria",
+        avatarUrl: (data.avatarUrl as string | null) ?? null,
+        notifyEmail: (data.notifyEmail as boolean | undefined) ?? true,
+        notifySms: (data.notifySms as boolean | undefined) ?? true,
+        notifyPush: (data.notifyPush as boolean | undefined) ?? false,
+        preferences: (data.preferences as Json | null) ?? null,
+      };
+      tables.profiles.push(row);
+      return clone(row);
+    },
+    update: async ({
+      where,
+      data,
+    }: {
+      where: { userId: string };
+      data: Record<string, unknown>;
+    }) => {
+      const row = tables.profiles.find((p) => p.userId === where.userId);
+      if (!row) throw new Error("Profile not found");
+      applyUpdate(row, data);
+      return clone(row);
     },
   },
   property: propertyModel,
@@ -1996,13 +2228,60 @@ export const fakePrisma = {
   developerMembership: developerMembershipModel,
   developerInvite: developerInviteModel,
   subscription: subscriptionModel,
+  payment: paymentModel,
   auditLog: auditLogModel,
+  platformSettings: {
+    findUnique: async ({ where }: { where: { id: string } }) => {
+      const row = tables.platformSettings.find((r) => r.id === where.id);
+      return row ? clone(row) : null;
+    },
+    upsert: async ({
+      where,
+      create,
+      update,
+    }: {
+      where: { id: string };
+      create: Record<string, unknown>;
+      update: Record<string, unknown>;
+    }) => {
+      let row = tables.platformSettings.find((r) => r.id === where.id);
+      if (!row) {
+        row = {
+          id: (create.id as string) ?? where.id,
+          maintenanceMode: Boolean(create.maintenanceMode),
+          whatsappAutoApproveMinScore:
+            (create.whatsappAutoApproveMinScore as number | null) ?? null,
+          updatedAt: new Date(),
+          updatedBy: (create.updatedBy as string | null) ?? null,
+        };
+        tables.platformSettings.push(row);
+        return clone(row);
+      }
+      applyUpdate(row, { ...update, ...create });
+      row.updatedAt = new Date();
+      return clone(row);
+    },
+    update: async ({
+      where,
+      data,
+    }: {
+      where: { id: string };
+      data: Record<string, unknown>;
+    }) => {
+      const row = tables.platformSettings.find((r) => r.id === where.id);
+      if (!row) throw new Error("PlatformSettings not found");
+      applyUpdate(row, data);
+      row.updatedAt = new Date();
+      return clone(row);
+    },
+  },
   rawWhatsAppMessage: rawWhatsAppMessageModel,
   listingSeoVariant: listingSeoVariantModel,
   serviceLead: serviceLeadModel,
   serviceBundle: serviceBundleModel,
   bundleActivation: bundleActivationModel,
   serviceReview: serviceReviewModel,
+  providerWhatsAppConnection: providerWhatsAppConnectionModel,
   notification: notificationModel,
   providerAvailability: providerAvailabilityModel,
   review: {
@@ -2011,6 +2290,9 @@ export const fakePrisma = {
   $transaction: async <T>(fn: (tx: typeof fakePrisma) => Promise<T>) => fn(fakePrisma),
   $queryRaw: async (parts?: unknown, ...values: unknown[]) => {
     const flat = extractTaggedTemplateSqlValues(parts, values);
+    if (isProviderCoordQuery(parts, flat)) {
+      return syntheticProviderCoordinates(parts, flat);
+    }
     const rows = syntheticServicehubCandidates(flat);
     if (rows.length > 0) return rows;
     return [];

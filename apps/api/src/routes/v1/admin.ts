@@ -12,6 +12,11 @@ import {
   listingIdParamSchema,
   rejectListingBodySchema,
 } from "../../contracts/listings.js";
+import { adminAnalyticsV1 } from "./admin.analytics.js";
+import { adminAutomationV1 } from "./admin.automation.js";
+import { adminPaymentsV1 } from "./admin.payments.js";
+import { adminReportsV1 } from "./admin.reports.js";
+import { adminUsersV1 } from "./admin.users.js";
 
 export const adminV1 = new Hono<ApiEnv>();
 
@@ -130,3 +135,9 @@ adminV1.post(
     return c.json({ data: listingToJson(row) });
   },
 );
+
+adminV1.route("/users", adminUsersV1);
+adminV1.route("/payments", adminPaymentsV1);
+adminV1.route("/analytics", adminAnalyticsV1);
+adminV1.route("/reports", adminReportsV1);
+adminV1.route("/", adminAutomationV1);

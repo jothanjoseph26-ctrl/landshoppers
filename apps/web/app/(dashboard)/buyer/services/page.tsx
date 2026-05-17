@@ -1,6 +1,6 @@
 import Link from "next/link"
 
-import { BuyerServiceHubPanel } from "@/components/servicehub/dashboard-servicehub-widgets"
+import { BuyerServiceLeadsList } from "@/components/servicehub/buyer-service-leads-list"
 
 export default function BuyerServicesHubPage() {
   return (
@@ -8,12 +8,11 @@ export default function BuyerServicesHubPage() {
       <div>
         <h1 className="text-2xl font-bold md:text-3xl">Property services</h1>
         <p className="text-muted-foreground">
-          Track lawyers, surveyors, and other specialists you engage through LandShoppers — this hub
-          will deepen as buyer service-lead endpoints go live.
+          Track lawyers, surveyors, and other specialists you engage through LandShoppers ServiceHub.
         </p>
       </div>
 
-      <BuyerServiceHubPanel variant="page" />
+      <BuyerServiceLeadsList />
 
       <div className="mx-auto max-w-3xl text-sm text-muted-foreground">
         <p>

@@ -1,8 +1,13 @@
-import { ListingStatus, UserRole, WhatsAppMessageStatus } from "@landshoppers/db";
+import {
+  ListingStatus,
+  UserRole,
+  WhatsAppMessageStatus,
+} from "@landshoppers/db";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
 
+import { adminWhatsappSummarySchema } from "../../contracts/admin-automation.js";
 import { offsetFromPage, paginationQuerySchema } from "../../contracts/common.js";
 import {
   coercePropertyType,
@@ -85,6 +90,33 @@ async function resolveListingOwnerUserId(): Promise<string> {
   }
   return anyUser.id;
 }
+
+adminWhatsappV1.get("/summary", async (c) => {
+  const startOfDay = new Date();
+  startOfDay.setUTCHours(0, 0, 0, 0);
+
+  const [pending, processed, approvedToday] = await Promise.all([
+    prisma.rawWhatsAppMessage.count({
+      where: { status: WhatsAppMessageStatus.PENDING },
+    }),
+    prisma.rawWhatsAppMessage.count({
+      where: { status: WhatsAppMessageStatus.PROCESSED },
+    }),
+    prisma.rawWhatsAppMessage.count({
+      where: {
+        status: WhatsAppMessageStatus.APPROVED,
+        approvedAt: { gte: startOfDay },
+      },
+    }),
+  ]);
+
+  const payload = { pending, processed, approvedToday };
+  const parsed = adminWhatsappSummarySchema.safeParse(payload);
+  if (!parsed.success) {
+    throw new ApiError(500, "INTERNAL_ERROR", "Invalid WhatsApp summary");
+  }
+  return c.json({ data: parsed.data });
+});
 
 adminWhatsappV1.get("/reviews", zValidator("query", reviewsQuerySchema), async (c) => {
   const { page, pageSize, status } = c.req.valid("query");

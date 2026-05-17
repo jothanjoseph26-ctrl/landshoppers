@@ -171,3 +171,136 @@ export async function sendAgentPortalMessage(body: {
   })
   return res.data
 }
+
+export type AgentAnalyticsPeriod = "week" | "month" | "quarter" | "all"
+
+export type ApiAgentAnalyticsSummary = {
+  period: string
+  tier: AgentPortalTier
+  analyticsDepth: "basic" | "full"
+  kpis: {
+    views: {
+      byDay: Array<{ date: string; count: number }>
+      total: number
+      changePercent: number | null
+    }
+    inquiries: {
+      byDay: Array<{ date: string; count: number }>
+      byStatus: Record<string, number>
+      total: number
+    }
+    conversionRatePercent: number | null
+    topListings: Array<{ listingId: string; title: string; views: number; inquiries: number }>
+  }
+}
+
+export async function fetchAgentAnalyticsSummary(period: AgentAnalyticsPeriod = "month") {
+  return apiFetch<{ data: ApiAgentAnalyticsSummary }>(
+    `/v1/agent/analytics/summary${qs({ period })}`,
+    { auth: true },
+  )
+}
+
+export type ApiAgentSubscription = {
+  persona: "agent" | "developer"
+  agentId: string | null
+  agencyName: string | null
+  tier: AgentPortalTier
+  subscription: {
+    plan: string | null
+    status: string | null
+    renewsAt: string | null
+    currentPeriodStart: string | null
+    currentPeriodEnd: string | null
+    cancelledAt: string | null
+    paystackCustomerId: string | null
+  }
+  usage: { activeListings: number; inquiriesThisMonth: number }
+  limits: {
+    maxActiveListings: number | null
+    maxLeadsPerMonth: number | null
+    maxAiDescriptionGenerationsPerDay: number | null
+    maxWhatsappConnections: number | null
+  }
+  paystackConfigured: boolean
+}
+
+export type AgentSubscriptionPlan = "agent_basic" | "agent_pro"
+
+export async function fetchAgentSubscription() {
+  return apiFetch<{ data: ApiAgentSubscription }>("/v1/agent/subscription", { auth: true })
+}
+
+export async function fetchAgentSubscriptionInvoices(params: PageParams = {}) {
+  return apiFetch<ApiListResponse<
+    Array<{
+      id: string
+      type: string
+      status: string
+      amount: string
+      currency: string
+      reference: string
+      paidAt: string | null
+      createdAt: string
+    }>
+  >>(`/v1/agent/subscription/invoices${qs({ page: params.page, pageSize: params.pageSize })}`, {
+    auth: true,
+  })
+}
+
+export async function postAgentSubscriptionCheckout(plan: AgentSubscriptionPlan) {
+  return apiFetch<{
+    data: {
+      mode: "stub"
+      plan: string
+      reference: string
+      authorizationUrl: string
+      disclaimer: string
+    }
+  }>("/v1/agent/subscription/checkout", { method: "POST", auth: true, body: { plan } })
+}
+
+export type ApiAgentSettings = {
+  email: string
+  persona: "agent" | "developer"
+  agency: { agencyName: string | null; licenseNumber: string | null }
+  profile: {
+    firstName: string | null
+    lastName: string | null
+    avatarUrl: string | null
+    city: string | null
+    state: string | null
+    country: string | null
+  } | null
+  notifications: {
+    notifyEmail: boolean
+    notifySms: boolean
+    notifyPush: boolean
+  }
+}
+
+export type PatchAgentSettingsBody = {
+  agencyName?: string | null
+  licenseNumber?: string | null
+  firstName?: string | null
+  lastName?: string | null
+  city?: string | null
+  state?: string | null
+  country?: string | null
+  avatarUrl?: string | null
+  notifyEmail?: boolean
+  notifySms?: boolean
+  notifyPush?: boolean
+}
+
+export async function fetchAgentSettings() {
+  return apiFetch<{ data: ApiAgentSettings }>("/v1/agent/settings", { auth: true })
+}
+
+export async function patchAgentSettings(body: PatchAgentSettingsBody) {
+  return apiFetch<{ data: ApiAgentSettings }>("/v1/agent/settings", {
+    method: "PATCH",
+    auth: true,
+    body,
+  })
+}

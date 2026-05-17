@@ -6,8 +6,16 @@ function isPaidTier(tier: string): boolean {
   return tier === "pro" || tier === "elite";
 }
 
+export type ServiceProviderListCoords = {
+  latitude: number | null;
+  longitude: number | null;
+};
+
 /** Public directory row — includes legacy `services` / `isPremium` for existing web components. */
-export function serviceProviderPublicListItem(p: ServiceProvider) {
+export function serviceProviderPublicListItem(
+  p: ServiceProvider,
+  coords?: ServiceProviderListCoords,
+) {
   const services = serviceLabelsFromServicesOffered(p.servicesOffered);
   const tier = p.subscriptionTier;
   return {
@@ -35,6 +43,8 @@ export function serviceProviderPublicListItem(p: ServiceProvider) {
     isPremium: isPaidTier(tier),
     featuredUntil: p.featuredUntil?.toISOString() ?? null,
     services,
+    latitude: coords?.latitude ?? null,
+    longitude: coords?.longitude ?? null,
   };
 }
 

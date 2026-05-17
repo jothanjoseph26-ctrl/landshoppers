@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 import { ChevronRight, Filter } from "lucide-react"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
-import { ServiceHubProviderCard } from "@/components/servicehub/servicehub-provider-card"
+import { ServiceHubDirectoryResults } from "@/components/servicehub/servicehub-directory-results"
 import { Button } from "@/components/ui/button"
 import {
   DEMO_SERVICE_PROVIDERS,
@@ -18,6 +18,7 @@ type SearchParams = {
   keyword?: string
   location?: string
   sort?: string
+  view?: string
 }
 
 export const revalidate = 60
@@ -121,6 +122,7 @@ export default async function ServiceDirectoryCategoryPage({ params, searchParam
   }
 
   const sortClient = (sp.sort as string | undefined) ?? "rating"
+  const view = sp.view === "map" ? "map" : "list"
   const stateLine = sp.location ? ` · ${sp.location}` : ""
 
   return (
@@ -176,25 +178,9 @@ export default async function ServiceDirectoryCategoryPage({ params, searchParam
             </div>
           </div>
 
-          <ServiceHubDirectoryControls category={category} sort={sortClient} />
+          <ServiceHubDirectoryControls category={category} sort={sortClient} view={view} />
 
-          {providers.length === 0 ? (
-            <div className="rounded-lg border border-dashed py-16 text-center">
-              <h2 className="text-lg font-semibold">No providers in this slice yet</h2>
-              <p className="mt-2 text-muted-foreground">
-                Try another category or city — or be the first to join this vertical.
-              </p>
-              <Button asChild className="mt-6">
-                <Link href="/services/join">Provider signup</Link>
-              </Button>
-            </div>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {providers.map((p) => (
-                <ServiceHubProviderCard key={p.id} provider={p} />
-              ))}
-            </div>
-          )}
+          <ServiceHubDirectoryResults providers={providers} view={view} category={category} />
 
           <div className="mt-12 max-w-3xl text-sm text-muted-foreground">
             <h2 className="mb-2 font-medium text-foreground">

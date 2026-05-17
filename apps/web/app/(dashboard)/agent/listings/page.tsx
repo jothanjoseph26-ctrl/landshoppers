@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useState } from "react"
-import { Eye, Plus, Send, Trash2 } from "lucide-react"
+import { Eye, Pencil, Plus, Send, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -163,6 +163,11 @@ export default function AgentListingsPage() {
                         <Button asChild size="icon" variant="ghost" aria-label="Open listing">
                           <Link href={`/listings/${slug}`}>
                             <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <Button asChild size="icon" variant="ghost" aria-label="Edit listing">
+                          <Link href={`/agent/listings/${listing.id}/edit`}>
+                            <Pencil className="h-4 w-4" />
                           </Link>
                         </Button>
                         {(status === "draft" || status === "rejected") && (

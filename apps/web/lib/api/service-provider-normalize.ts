@@ -20,6 +20,7 @@ export function normalizeServiceProviderFromApi(
     isPremium: Boolean(j["isPremium"]),
     isFeatured: Boolean(j["isFeatured"]),
     phone: typeof j["phone"] === "string" ? j["phone"] : null,
+    email: typeof j["email"] === "string" ? j["email"] : null,
     logoUrl: typeof j["logoUrl"] === "string" ? j["logoUrl"] : null,
     coverImageUrl:
       typeof j["coverImageUrl"] === "string"
@@ -42,6 +43,14 @@ export function normalizeServiceProviderFromApi(
       ? (j["subCategories"] as unknown[]).map(String)
       : undefined,
     matchHint: typeof j["matchHint"] === "string" ? j["matchHint"] : undefined,
+    latitude:
+      typeof j["latitude"] === "number" && Number.isFinite(j["latitude"])
+        ? j["latitude"]
+        : null,
+    longitude:
+      typeof j["longitude"] === "number" && Number.isFinite(j["longitude"])
+        ? j["longitude"]
+        : null,
   }
 }
 

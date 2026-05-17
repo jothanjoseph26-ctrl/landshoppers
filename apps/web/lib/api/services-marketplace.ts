@@ -16,6 +16,7 @@ export type ApiServiceProviderListItem = {
   isPremium?: boolean
   isFeatured?: boolean
   phone?: string | null
+  email?: string | null
   logoUrl?: string | null
   /** Hero / card imagery */
   coverImageUrl?: string | null
@@ -28,6 +29,9 @@ export type ApiServiceProviderListItem = {
   subCategories?: string[]
   /** Contextual engine: short copy for tooltip (e.g. proximity + verification). */
   matchHint?: string
+  /** WGS84 from PostGIS geom when API exposes coordinates (SVC-PUB-02). */
+  latitude?: number | null
+  longitude?: number | null
 }
 
 export type ApiServicesCategoriesItem = {
@@ -91,9 +95,16 @@ export async function tryFetchServiceProviders(
     const json = await apiFetch<unknown>(path)
     const inner = unwrapData<{ items?: unknown; total?: unknown }>(json)
     if (!inner || typeof inner !== "object") return null
-    const items = (inner as { items?: ApiServiceProviderListItem[] }).items
+    const rawItems = (inner as { items?: unknown[] }).items
     const total = (inner as { total?: number }).total
-    if (!Array.isArray(items)) return null
+    if (!Array.isArray(rawItems)) return null
+    const items: ApiServiceProviderListItem[] = []
+    for (const row of rawItems) {
+      if (row && typeof row === "object") {
+        const n = normalizeServiceProviderFromApi(row as Record<string, unknown>)
+        if (n) items.push(n)
+      }
+    }
     return { items, total: typeof total === "number" ? total : items.length }
   } catch (e) {
     if (e instanceof ApiRequestError && (e.status === 404 || e.status === 501)) return null
@@ -226,6 +237,7 @@ export type ActivateBundlePayload = {
   listingId?: string
   location?: string
   message?: string
+  developerProjectId?: string
 }
 
 /** POST /v1/services/bundles/:id/activate */

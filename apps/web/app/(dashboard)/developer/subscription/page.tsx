@@ -260,7 +260,7 @@ export default function DeveloperSubscriptionPage() {
                         size="sm"
                         className="w-full"
                         disabled={checkoutBusy !== null}
-                        onClick={() => void checkout(tier.planArg)}
+                        onClick={() => void checkout(tier.planArg!)}
                       >
                         {checkoutBusy === tier.planArg ? (
                           <Loader2 className="h-4 w-4 animate-spin" />

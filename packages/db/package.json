@@ -14,7 +14,8 @@
     "generate": "prisma generate",
     "seed": "prisma db seed",
     "lint": "tsc --noEmit -p tsconfig.json",
-    "verify:postgis": "tsx scripts/verify-postgis.ts"
+    "verify:postgis": "tsx scripts/verify-postgis.ts",
+    "verify:tables": "node scripts/verify-tables.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

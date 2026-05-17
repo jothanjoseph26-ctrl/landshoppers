@@ -29,6 +29,9 @@ import { requireAgentOrDeveloper, requireAuth } from "../../middleware/auth.js";
 import { rateLimit } from "../../middleware/rate-limit.js";
 import type { ApiEnv } from "../../types/env.js";
 import { z } from "zod";
+import { agentAnalyticsV1 } from "./agent.analytics.js";
+import { agentSettingsV1 } from "./agent.settings.js";
+import { agentSubscriptionV1 } from "./agent.subscription.js";
 
 export const agentScopedV1 = new Hono<ApiEnv>();
 
@@ -295,3 +298,7 @@ agentScopedV1.post(
     return c.json({ data: result }, 201);
   },
 );
+
+agentScopedV1.route("/analytics", agentAnalyticsV1);
+agentScopedV1.route("/subscription", agentSubscriptionV1);
+agentScopedV1.route("/settings", agentSettingsV1);

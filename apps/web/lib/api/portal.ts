@@ -192,6 +192,35 @@ export async function submitListing(id: string): Promise<ApiListing> {
   return res.data
 }
 
+export async function fetchListingById(id: string): Promise<ApiListing> {
+  const res = await apiFetch<{ data: ApiListing }>(`/v1/listings/${id}`, { auth: true })
+  return res.data
+}
+
+export async function updateListing(
+  id: string,
+  body: Partial<{
+    title: string
+    description: string | null
+    propertyType: "apartment" | "house" | "land" | "commercial" | "estate_unit"
+    city: string
+    state: string
+    country: string
+    address: string | null
+    bedrooms: number | null
+    bathrooms: number | null
+    priceKobo: string
+    priceNegotiable: boolean
+  }>,
+): Promise<ApiListing> {
+  const res = await apiFetch<{ data: ApiListing }>(`/v1/listings/${id}`, {
+    method: "PATCH",
+    auth: true,
+    body,
+  })
+  return res.data
+}
+
 export async function softDeleteListing(id: string): Promise<void> {
   await apiFetch(`/v1/listings/${id}`, { method: "DELETE", auth: true })
 }

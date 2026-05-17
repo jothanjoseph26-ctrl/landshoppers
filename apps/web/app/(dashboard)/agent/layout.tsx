@@ -2,7 +2,21 @@
 
 import { useEffect, useState } from "react"
 import useSWR from "swr"
-import { BadgeCheck, BarChart3, CreditCard, Handshake, Home, Inbox, ListChecks, MessageSquare, Settings, User } from "lucide-react"
+import {
+  BadgeCheck,
+  BarChart3,
+  CreditCard,
+  Handshake,
+  Home,
+  Inbox,
+  ListChecks,
+  MessageSquare,
+  PenLine,
+  Settings,
+  Share2,
+  User,
+  Wallet,
+} from "lucide-react"
 
 import { PortalShell, type PortalNavItem } from "@/components/dashboard/portal-shell"
 import { fetchAgentContext } from "@/lib/api/agent-portal"
@@ -11,9 +25,13 @@ import { getAccessToken } from "@/lib/api/auth-session"
 const navItems: PortalNavItem[] = [
   { title: "Dashboard", href: "/agent", icon: Home },
   { title: "Listings", href: "/agent/listings", icon: ListChecks },
+  { title: "Content", href: "/agent/content", icon: PenLine },
   { title: "Partners", href: "/agent/partners", icon: Handshake },
+  { title: "Referrals", href: "/agent/referrals", icon: Share2 },
+  { title: "Commissions", href: "/agent/commissions", icon: Wallet },
   { title: "Leads", href: "/agent/leads", icon: MessageSquare },
   { title: "Messages", href: "/agent/messages", icon: Inbox },
+  { title: "WhatsApp", href: "/agent/whatsapp", icon: MessageSquare },
   { title: "KYC", href: "/agent/kyc", icon: BadgeCheck },
   { title: "Subscription", href: "/agent/subscription", icon: CreditCard },
   { title: "Analytics", href: "/agent/analytics", icon: BarChart3 },

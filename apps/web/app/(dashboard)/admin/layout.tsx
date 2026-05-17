@@ -18,6 +18,9 @@ import { PortalShell, type PortalNavItem } from "@/components/dashboard/portal-s
 const navItems: PortalNavItem[] = [
   { title: "Dashboard", href: "/admin", icon: Home },
   { title: "Users", href: "/admin/users", icon: Users },
+  { title: "KYC", href: "/admin/kyc", icon: Users },
+  { title: "Developers", href: "/admin/developers", icon: Users },
+  { title: "Services", href: "/admin/services", icon: Search },
   { title: "Listings", href: "/admin/listings", icon: ListChecks },
   { title: "Payments", href: "/admin/payments", icon: CreditCard },
   { title: "WhatsApp", href: "/admin/whatsapp", icon: MessageCircle },

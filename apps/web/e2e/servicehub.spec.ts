@@ -14,6 +14,14 @@ test.describe("@smoke ServiceHub (/services + /provider)", () => {
     ).toBeVisible()
   })
 
+  test("category directory link navigates from homepage", async ({ page }) => {
+    await page.goto("/services")
+    const legalLink = page.getByRole("link", { name: /legal/i }).first()
+    await legalLink.click()
+    await expect(page).toHaveURL(/\/services\/legal/)
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
+  })
+
   test("provider portal shell renders (auth token stub)", async ({ page }) => {
     await page.addInitScript(() => {
       sessionStorage.setItem("ls_access_token", "playwright-servicehub-provider")
@@ -24,5 +32,7 @@ test.describe("@smoke ServiceHub (/services + /provider)", () => {
     await expect(page.getByRole("heading", { name: /Provider Portal/i })).toBeVisible()
     await expect(page.getByRole("navigation").getByRole("link", { name: "Dashboard" })).toBeVisible()
     await expect(page.getByRole("link", { name: "Lead inbox" })).toBeVisible()
+    await expect(page.getByRole("link", { name: "Jobs" })).toBeVisible()
+    await expect(page.getByRole("link", { name: "Settings" })).toBeVisible()
   })
 })

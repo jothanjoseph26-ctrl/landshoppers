@@ -8,6 +8,7 @@ import { ArrowLeft, ExternalLink, Loader2, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { DeveloperServiceHubBundleCta } from "@/components/servicehub/developer-servicehub-bundle-cta"
 import { fetchDeveloperProject, type ApiDeveloperProject } from "@/lib/api/developer-portal"
 import { getAccessToken } from "@/lib/api/auth-session"
 
@@ -184,6 +185,8 @@ export default function DeveloperProjectDetailPage() {
           </CardContent>
         </Card>
       ) : null}
+
+      <DeveloperServiceHubBundleCta projectId={p.id} city={p.city} state={p.state} />
     </div>
   )
 }

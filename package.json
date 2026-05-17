@@ -12,6 +12,7 @@
     "db:studio": "pnpm --filter @landshoppers/db exec prisma studio",
     "db:seed": "pnpm --filter @landshoppers/db run seed",
     "db:verify:postgis": "pnpm --filter @landshoppers/db run verify:postgis",
+    "db:verify:tables": "pnpm --filter @landshoppers/db run verify:tables",
     "db:smoke": "node scripts/db-smoke.mjs",
     "routes:inventory": "node scripts/generate-route-inventory.mjs",
     "ai:install": "node scripts/python-module.mjs pip install -r apps/ai-service/requirements.txt",

@@ -11,6 +11,10 @@ import type { Redis } from "ioredis";
 import { ApiError } from "../errors.js";
 import { SERVICEHUB_CATEGORY_CATALOG } from "./category-catalog.js";
 import { getListingServiceMatches } from "./contextual-match.js";
+import {
+  bundleMatchedProvidersJson,
+  parseBundleMatchedSlots,
+} from "./matched-providers-json.js";
 
 const CATEGORY_NAME = new Map(
   SERVICEHUB_CATEGORY_CATALOG.map((c) => [c.id, c.name] as const),
@@ -129,6 +133,7 @@ export async function activateServiceBundleTransaction(
     listingId: string | null;
     locationText: string;
     messagePrefix: string | null;
+    developerProjectId: string | null;
   },
 ) {
   const bundle = await prisma.serviceBundle.findFirst({
@@ -177,15 +182,7 @@ export async function activateServiceBundleTransaction(
     });
 
     if (existing) {
-      const raw = existing.matchedProviders;
-      const slots = Array.isArray(raw)
-        ? (raw as Array<{
-            leadId?: string;
-            serviceCategory?: string;
-            providerId?: string;
-            status?: string;
-          }>)
-        : [];
+      const slots = parseBundleMatchedSlots(existing.matchedProviders);
       if (
         slots.length > 0 &&
         slots.every((s) => typeof s.leadId === "string" && s.leadId.length > 0)
@@ -211,9 +208,12 @@ export async function activateServiceBundleTransaction(
       }
     }
 
+    const projectLine = input.developerProjectId
+      ? `\nDeveloper project: ${input.developerProjectId}`
+      : "";
     const baseMessage =
-      input.messagePrefix?.trim() ||
-      `Bundle request: ${bundle.name}. Please review and respond with a quote.`;
+      (input.messagePrefix?.trim() ||
+        `Bundle request: ${bundle.name}. Please review and respond with a quote.`) + projectLine;
 
     const matchedSlots: Array<{
       serviceCategory: string;
@@ -289,7 +289,10 @@ export async function activateServiceBundleTransaction(
         clientUserId: input.clientUserId,
         listingId: input.listingId,
         status: BundleActivationStatus.providers_matched,
-        matchedProviders: matchedSlots as unknown as Prisma.InputJsonValue,
+        matchedProviders: bundleMatchedProvidersJson(
+          matchedSlots,
+          input.developerProjectId,
+        ) as unknown as Prisma.InputJsonValue,
         platformFeeKobo: estimatedPlatformFeeKobo,
       },
     });

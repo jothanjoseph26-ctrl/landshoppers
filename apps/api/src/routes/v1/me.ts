@@ -12,6 +12,8 @@ import { recentListingsV1 } from "./me.recent-listings.js";
 import { meInquiriesV1 } from "./me.inquiries.js";
 import { meRecommendationsV1 } from "./me.recommendations.js";
 import { meServiceLeadsV1 } from "./me.service-leads.js";
+import { meSettingsV1 } from "./me.settings.js";
+import { meToursV1 } from "./me.tours.js";
 
 export const meV1 = new Hono<ApiEnv>();
 
@@ -45,3 +47,5 @@ meV1.route("/inquiries", meInquiriesV1);
 meV1.route("/recommendations", meRecommendationsV1);
 meV1.route("/developer", meDeveloperV1);
 meV1.route("/service-leads", meServiceLeadsV1);
+meV1.route("/settings", meSettingsV1);
+meV1.route("/tours", meToursV1);

@@ -27,7 +27,7 @@ meServiceLeadsV1.get("/", requireAuth, async (c) => {
   const providerIds = [...new Set(rows.map((r) => r.serviceProviderId))];
   const providers = await prisma.serviceProvider.findMany({
     where: { id: { in: providerIds }, deletedAt: null },
-    select: { id: true, businessName: true, slug: true },
+    select: { id: true, businessName: true, slug: true, category: true },
   });
   const byId = new Map(providers.map((p) => [p.id, p]));
   const data = rows

@@ -58,7 +58,7 @@ export default function DeveloperSettingsPage() {
   }, [row])
 
   async function onSave() {
-    if (!token) return
+    if (!token || !row) return
     setSaving(true)
     setErr(null)
     try {

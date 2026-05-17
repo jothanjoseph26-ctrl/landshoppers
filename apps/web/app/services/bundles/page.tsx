@@ -1,100 +1,116 @@
 import Link from "next/link"
 import type { Metadata } from "next"
+import { Layers, Wrench } from "lucide-react"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ServiceHubBundleActivateForm } from "@/components/servicehub/servicehub-bundle-activate"
-import { fetchServiceBundlesPublic, type ApiServiceBundle } from "@/lib/api/services-marketplace"
-import { getServiceHubCategoryMeta } from "@/lib/servicehub/categories"
+import { ServiceHubBundlesCatalog } from "@/components/servicehub/servicehub-bundles-catalog"
+import { fetchServiceBundlesPublic } from "@/lib/api/services-marketplace"
 
 export const metadata: Metadata = {
   title: "Service bundles | LandShoppers ServiceHub",
   description:
-    "Multi-service packages for title work, new home readiness, listing launches, and developer projects.",
+    "Complete real estate service packages — legal, survey, media, and construction coordinated in one request.",
 }
 
-function formatBand(fromKobo: string, toKobo: string): string {
-  const lo = Number(BigInt(fromKobo)) / 100
-  const hi = Number(BigInt(toKobo)) / 100
-  if (!Number.isFinite(lo) || !Number.isFinite(hi)) return "Price on request"
-  const fmt = new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    maximumFractionDigits: 0,
-  })
-  return `${fmt.format(lo)} – ${fmt.format(hi)} (est.)`
+type PageProps = {
+  searchParams: Promise<{
+    highlight?: string
+    location?: string
+    projectId?: string
+    city?: string
+    state?: string
+  }>
 }
 
-function BundleCard({ b }: { b: ApiServiceBundle }) {
-  const price = formatBand(b.priceFromKobo, b.priceToKobo)
-  return (
-    <Card className="flex flex-col">
-      <CardHeader>
-        <CardTitle className="text-lg">{b.name}</CardTitle>
-        <CardDescription>{b.description}</CardDescription>
-        <p className="pt-2 text-sm font-medium text-primary">{price}</p>
-        <p className="text-xs text-muted-foreground">
-          {b.categories.length} categories · {b.activationCount} activations to date
-        </p>
-      </CardHeader>
-      <CardContent className="mt-auto space-y-3 border-t pt-4">
-        <div className="flex flex-wrap gap-1">
-          {b.categories.map((c) => (
-            <span
-              key={c}
-              className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
-            >
-              {getServiceHubCategoryMeta(c)?.label ?? c}
-            </span>
-          ))}
-        </div>
-        <ServiceHubBundleActivateForm bundleId={b.id} bundleName={b.name} />
-        <Button variant="outline" size="sm" asChild className="w-full">
-          <Link href="/services">Browse directory</Link>
-        </Button>
-      </CardContent>
-    </Card>
-  )
-}
-
-export default async function ServiceBundlesPage() {
+export default async function ServiceBundlesPage({ searchParams }: PageProps) {
+  const sp = await searchParams
   const bundles = await fetchServiceBundlesPublic()
+
+  const defaultLocation =
+    sp.location?.trim() ||
+    (sp.city && sp.state ? `${sp.city}, ${sp.state}` : sp.city?.trim()) ||
+    ""
+
+  const defaultMessage = sp.projectId
+    ? `Developer project RFQ (project ${sp.projectId}).`
+    : undefined
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto max-w-5xl px-4 py-12">
-        <div className="max-w-2xl">
-          <h1 className="text-3xl font-bold tracking-tight">Service packages</h1>
-          <p className="mt-3 text-muted-foreground">
-            One request can notify the best-matched provider in each category. You sign in, we route
-            structured leads to their ServiceHub inbox.
+        <section className="max-w-2xl">
+          <p className="text-sm font-medium uppercase tracking-wide text-primary">ServiceHub</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">
+            Complete real estate service packages — everything you need, in one place
+          </h1>
+          <p className="mt-4 text-lg text-muted-foreground">
+            Bundles coordinate multiple verified providers with a single activation. You confirm
+            location and details; we create structured quote requests for each service category.
           </p>
-        </div>
+        </section>
+
+        <Card className="mt-8 border-dashed bg-muted/20">
+          <CardHeader className="flex flex-row items-center gap-3 pb-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+              <Wrench className="h-5 w-5 text-primary" aria-hidden />
+            </div>
+            <div>
+              <CardTitle className="text-base">Build your own bundle</CardTitle>
+              <CardDescription>
+                Pick 2–6 categories and send one coordinated multi-quote request.
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="secondary">
+              <Link href="/services/bundles/build">Custom bundle builder</Link>
+            </Button>
+          </CardContent>
+        </Card>
 
         {bundles.length === 0 ? (
           <Card className="mt-10 border-dashed">
             <CardHeader>
               <CardTitle className="text-base">No bundles published yet</CardTitle>
               <CardDescription>
-                Seed the database or check that the API is running at{" "}
-                <code className="text-xs">NEXT_PUBLIC_API_URL</code>.
+                Seed ServiceHub bundles in the API or use the custom builder to request services by
+                category.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-wrap gap-3">
               <Button asChild>
-                <Link href="/services">Back to ServiceHub</Link>
+                <Link href="/services/bundles/build">Custom bundle</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/services">Directory</Link>
               </Button>
             </CardContent>
           </Card>
         ) : (
-          <div className="mt-10 grid gap-6 md:grid-cols-2">
-            {bundles.map((b) => (
-              <BundleCard key={b.id} b={b} />
-            ))}
+          <div className="mt-10">
+            <ServiceHubBundlesCatalog
+              bundles={bundles}
+              highlightSlug={sp.highlight ?? null}
+              defaultLocation={defaultLocation}
+              defaultMessage={defaultMessage}
+              defaultDeveloperProjectId={sp.projectId}
+            />
           </div>
         )}
+
+        <div className="mt-12 flex items-center gap-2 text-sm text-muted-foreground">
+          <Layers className="h-4 w-4" aria-hidden />
+          <span>
+            Developers: attach bundles to a project from{" "}
+            <Link href="/developer/projects" className="font-medium text-primary underline">
+              your portal
+            </Link>
+            .
+          </span>
+        </div>
       </main>
       <Footer />
     </div>

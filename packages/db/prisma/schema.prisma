@@ -199,6 +199,7 @@ enum ServiceLeadStatus {
   quoted
   negotiating
   accepted
+  in_progress
   completed
   cancelled
   lost
@@ -1385,6 +1386,20 @@ model AiRequestLog {
   @@index([model])
   @@index([createdAt])
   @@map("ai_request_log")
+}
+
+// ============================================
+// PLATFORM CONFIG (singleton row)
+// ============================================
+
+model PlatformSettings {
+  id                          String   @id @default("default") @db.VarChar(32)
+  maintenanceMode             Boolean  @default(false)
+  whatsappAutoApproveMinScore Float?
+  updatedAt                   DateTime @updatedAt
+  updatedBy                   String?  @db.Uuid
+
+  @@map("platform_settings")
 }
 
 // ============================================

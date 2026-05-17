@@ -23,6 +23,14 @@ import {
 import { serviceLeadToProviderPortalJson } from "../../lib/serialize/service-lead-portal.js";
 import { requireAuth, requireServiceProvider } from "../../middleware/auth.js";
 import type { ApiEnv } from "../../types/env.js";
+import { providerAnalyticsV1 } from "./provider.analytics.js";
+import { providerContentV1 } from "./provider.content.js";
+import { providerJobsV1 } from "./provider.jobs.js";
+import { providerKycV1 } from "./provider.kyc.js";
+import { providerReviewsV1 } from "./provider.reviews.js";
+import { providerSettingsV1 } from "./provider.settings.js";
+import { providerSubscriptionV1 } from "./provider.subscription.js";
+import { providerWhatsappV1 } from "./provider.whatsapp.js";
 
 export const providerScopedV1 = new Hono<ApiEnv>();
 
@@ -349,3 +357,12 @@ providerScopedV1.patch(
     return c.json({ data: serviceLeadToProviderPortalJson(updated) });
   },
 );
+
+providerScopedV1.route("/jobs", providerJobsV1);
+providerScopedV1.route("/analytics", providerAnalyticsV1);
+providerScopedV1.route("/reviews", providerReviewsV1);
+providerScopedV1.route("/kyc", providerKycV1);
+providerScopedV1.route("/subscription", providerSubscriptionV1);
+providerScopedV1.route("/settings", providerSettingsV1);
+providerScopedV1.route("/whatsapp", providerWhatsappV1);
+providerScopedV1.route("/content", providerContentV1);

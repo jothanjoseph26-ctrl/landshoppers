@@ -105,6 +105,50 @@ describe("admin automation (WhatsApp + SEO)", () => {
     expect(fakeTables.listings.some((l) => l.id === approve.body.data?.listing.id)).toBe(true);
   });
 
+  it("returns WhatsApp and SEO summaries", async () => {
+    const reg = await registerUser("buyer", "summary-admin@example.test");
+    promoteUserToAdmin(reg.user.id);
+    const admin = await login("summary-admin@example.test");
+
+    fakeTables.rawWhatsAppMessages.push({
+      id: randomUUID(),
+      messageId: "wamid.summary",
+      groupId: null,
+      groupName: null,
+      senderPhone: "+2348011111111",
+      senderName: null,
+      messageType: "text",
+      textContent: "Hi",
+      mediaUrls: [],
+      status: "PENDING",
+      extractedData: null,
+      confidenceScore: null,
+      extractionError: null,
+      processedAt: null,
+      approvedAt: null,
+      approvedBy: null,
+      rejectedAt: null,
+      rejectedBy: null,
+      rejectionReason: null,
+      createdListingId: null,
+      receivedAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const wa = await call<{ data: { pending: number } }>("/v1/admin/whatsapp/summary", {
+      token: admin.accessToken,
+    });
+    expect(wa.status).toBe(200);
+    expect(wa.body.data?.pending).toBeGreaterThanOrEqual(1);
+
+    const seo = await call<{ data: { draft: number } }>("/v1/admin/seo/summary", {
+      token: admin.accessToken,
+    });
+    expect(seo.status).toBe(200);
+    expect(typeof seo.body.data?.draft).toBe("number");
+  });
+
   it("approves an SEO variant draft", async () => {
     const reg = await registerUser("buyer", "seo-admin@example.test");
     promoteUserToAdmin(reg.user.id);
@@ -141,5 +185,42 @@ describe("admin automation (WhatsApp + SEO)", () => {
     );
     expect(res.status).toBe(200);
     expect(res.body.data?.status).toBe("approved");
+  });
+
+  it("rejects an SEO variant draft", async () => {
+    const reg = await registerUser("buyer", "seo-reject@example.test");
+    promoteUserToAdmin(reg.user.id);
+    const admin = await login("seo-reject@example.test");
+
+    const variantId = randomUUID();
+    fakeTables.listingSeoVariants.push({
+      id: variantId,
+      listingId: randomUUID(),
+      variantType: "standard",
+      seoTitle: "Reject me",
+      metaDescription: "Desc",
+      hashtags: [],
+      fullCopy: null,
+      socialCaption: null,
+      tone: null,
+      targetAudience: null,
+      status: "draft",
+      approvedAt: null,
+      approvedBy: null,
+      rejectedAt: null,
+      rejectedBy: null,
+      rejectionReason: null,
+      scheduledAt: null,
+      postedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const res = await call<{ data: { status: string } }>(
+      `/v1/admin/seo/variants/${variantId}/reject`,
+      { method: "POST", token: admin.accessToken, body: { reason: "Off-brand tone" } },
+    );
+    expect(res.status).toBe(200);
+    expect(res.body.data?.status).toBe("rejected");
   });
 });

@@ -1,8 +1,8 @@
-import type { ServiceLead } from "@landshoppers/db";
+import type { ServiceCategory, ServiceLead } from "@landshoppers/db";
 
 export function serviceLeadToClientJson(
   lead: ServiceLead,
-  provider: { id: string; businessName: string; slug: string },
+  provider: { id: string; businessName: string; slug: string; category: ServiceCategory },
 ) {
   return {
     id: lead.id,
@@ -22,6 +22,7 @@ export function serviceLeadToClientJson(
       id: provider.id,
       businessName: provider.businessName,
       slug: provider.slug,
+      category: provider.category,
     },
   };
 }

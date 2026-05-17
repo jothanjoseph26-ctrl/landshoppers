@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation"
 import { ChevronRight } from "lucide-react"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
-import { ServiceHubProviderCard } from "@/components/servicehub/servicehub-provider-card"
+import { ServiceHubDirectoryResults } from "@/components/servicehub/servicehub-directory-results"
 import { ServiceHubProviderProfile } from "@/components/servicehub/servicehub-provider-profile"
 import { Button } from "@/components/ui/button"
 import {
@@ -28,7 +28,13 @@ import { ServiceHubDirectoryControls } from "../servicehub-directory-controls"
 
 export const revalidate = 60
 
-type SearchParams = { keyword?: string; sort?: string; listingId?: string; source?: string }
+type SearchParams = {
+  keyword?: string
+  sort?: string
+  view?: string
+  listingId?: string
+  source?: string
+}
 
 type PageProps = {
   params: Promise<{ category: string; segment: string }>
@@ -106,8 +112,33 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: `Find verified ${(meta?.label ?? category).toLowerCase()} professionals in ${place}.`,
     }
   }
+  const apiPayload = await tryFetchServiceProviderBySlug(segment)
+  let businessName = segment.replace(/-/g, " ")
+  let description = `Verified ${(meta?.label ?? category).toLowerCase()} professional on LandShoppers ServiceHub.`
+  if (apiPayload && typeof apiPayload === "object") {
+    const root = apiPayload as Record<string, unknown>
+    const doc =
+      root["provider"] && typeof root["provider"] === "object"
+        ? (root["provider"] as Record<string, unknown>)
+        : root["profile"] && typeof root["profile"] === "object"
+          ? (root["profile"] as Record<string, unknown>)
+          : root
+    const n = normalizeServiceProviderFromApi(doc)
+    if (n) {
+      businessName = n.businessName
+      if (n.description) description = n.description.slice(0, 160)
+    }
+  }
+  const catLabel = meta?.label ?? category
+  const canonical = `/services/${category}/${segment}`
   return {
-    title: `Provider profile | LandShoppers ServiceHub`,
+    title: `${businessName} | ${catLabel} | ServiceHub`,
+    description,
+    openGraph: {
+      title: `${businessName} | ${catLabel} | ServiceHub`,
+      description,
+    },
+    alternates: { canonical },
   }
 }
 
@@ -135,6 +166,7 @@ export default async function ServiceSegmentPage({ params, searchParams }: PageP
 
     const meta = getServiceHubCategoryMeta(category)!
     const sortClient = sp.sort ?? "rating"
+    const view = sp.view === "map" ? "map" : "list"
 
     return (
       <div className="min-h-screen bg-background">
@@ -180,25 +212,18 @@ export default async function ServiceSegmentPage({ params, searchParams }: PageP
             <ServiceHubDirectoryControls
               category={category}
               sort={sortClient}
+              view={view}
               geoSlug={segment}
             />
-            {providers.length === 0 ? (
-              <div className="rounded-lg border border-dashed py-16 text-center">
-                <h2 className="text-lg font-semibold">No providers match this area yet</h2>
-                <p className="mt-2 text-muted-foreground">
-                  Expand to nearby LGAs or list your practice to appear here.
-                </p>
-                <Button asChild className="mt-6">
-                  <Link href="/services/join">Become a provider</Link>
-                </Button>
-              </div>
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {providers.map((p) => (
-                  <ServiceHubProviderCard key={p.id} provider={p} />
-                ))}
-              </div>
-            )}
+            <ServiceHubDirectoryResults
+              providers={providers}
+              view={view}
+              category={category}
+              emptyTitle="No providers match this area yet"
+              emptyDescription="Expand to nearby LGAs or list your practice to appear here."
+              emptyCtaHref="/services/join"
+              emptyCtaLabel="Become a provider"
+            />
             <p className="mx-auto mt-10 max-w-3xl text-sm text-muted-foreground">
               Find verified {meta.shortLabel.toLowerCase()} professionals in {place}. LandShoppers
               ServiceHub connects transaction-ready users with professionals who carry documentation,

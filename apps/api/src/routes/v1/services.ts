@@ -24,6 +24,7 @@ import {
 import { ApiError } from "../../lib/errors.js";
 import { prisma } from "../../lib/prisma.js";
 import { activateServiceBundleTransaction } from "../../lib/servicehub/bundle-activate.js";
+import { fetchProviderCoordsByIds } from "../../lib/servicehub/provider-coords.js";
 import {
   getListingServiceMatches,
   type ServicehubMatchedProvider,
@@ -167,8 +168,19 @@ servicesPublicV1.get("/", zValidator("query", listPublicServicesQuerySchema), as
     }),
   ]);
 
+  const coordsById = await fetchProviderCoordsByIds(
+    prisma,
+    rows.map((r) => r.id),
+  );
+
   return c.json({
-    data: rows.map(serviceProviderPublicListItem),
+    data: rows.map((p) => {
+      const coords = coordsById.get(p.id);
+      return serviceProviderPublicListItem(p, {
+        latitude: coords?.latitude ?? null,
+        longitude: coords?.longitude ?? null,
+      });
+    }),
     meta: {
       page,
       pageSize,
@@ -297,6 +309,20 @@ servicesPublicV1.post(
 
     const locationFinal = locationText && locationText.length > 0 ? locationText : "Nigeria";
 
+    if (body.developerProjectId) {
+      const project = await prisma.developerProject.findFirst({
+        where: { id: body.developerProjectId, deletedAt: null },
+      });
+      const ownsProject =
+        project &&
+        (await prisma.developer.findFirst({
+          where: { id: project.developerId, userId: authUser.id, deletedAt: null },
+        }));
+      if (!ownsProject) {
+        throw new ApiError(404, "DEVELOPER_PROJECT_NOT_FOUND", "Developer project not found");
+      }
+    }
+
     const result = await activateServiceBundleTransaction(prisma, getServicehubMatchRedis(), {
       bundleId,
       clientUserId: authUser.id,
@@ -306,6 +332,7 @@ servicesPublicV1.post(
       listingId,
       locationText: locationFinal,
       messagePrefix: body.message ?? null,
+      developerProjectId: body.developerProjectId ?? null,
     });
 
     return c.json(
@@ -610,7 +637,7 @@ adminServicehubV1.get(
     ]);
 
     return c.json({
-      data: rows.map(serviceProviderPublicListItem),
+      data: rows.map((p) => serviceProviderPublicListItem(p)),
       meta: {
         page,
         pageSize,

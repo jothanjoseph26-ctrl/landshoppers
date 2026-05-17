@@ -28,6 +28,16 @@ export const listPublicServicesQuerySchema = paginationQuerySchema.extend({
 
 export type ListPublicServicesQuery = z.infer<typeof listPublicServicesQuerySchema>;
 
+/** GET /v1/services — directory list row (map pins use optional lat/lng from PostGIS geom). */
+export const publicServiceProviderListRowSchema = z.object({
+  id: z.string().uuid(),
+  businessName: z.string(),
+  slug: z.string(),
+  category: z.nativeEnum(ServiceCategory),
+  latitude: z.number().nullable().optional(),
+  longitude: z.number().nullable().optional(),
+});
+
 /** Categories from `categories[]=a&categories[]=b` or single comma-separated `categories=`. Omit → sensible defaults server-side. */
 const matchCategoriesPreprocess = z.preprocess((val) => {
   if (val === undefined || val === null) return undefined;
@@ -117,6 +127,7 @@ export const postActivateBundleParamSchema = z.object({
 export const postActivateBundleBodySchema = z
   .object({
     listingId: z.string().uuid().optional(),
+    developerProjectId: z.string().uuid().optional(),
     location: z.string().min(2).max(500).optional(),
     clientName: z.string().min(2).max(120),
     clientPhone: z.string().min(5).max(32),

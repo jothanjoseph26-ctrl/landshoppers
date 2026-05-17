@@ -4,7 +4,7 @@
 **Stack:** Turborepo, Next (`apps/web`), Hono (`apps/api`), Prisma (`packages/db`), BullMQ workers (`apps/workers`), Vitest / Playwright.  
 **Related roadmaps:** [Agent Portal (AgentOS)](./AGENT_PORTAL_ROADMAP.md), [Developer Portal](./DEVELOPER_PORTAL_ROADMAP.md) — ServiceHub consumes personas and touchpoints from both.
 
-**Last updated:** 2026-05-16 (bundles API + admin verify + provider availability shipped)
+**Last updated:** 2026-05-17 (Stream 1+2 gap closure — BUY-01, SVC-PUB-02/03/04; see [`SERVICEHUB_STREAM_1_2_GAP_CLOSURE.md`](./SERVICEHUB_STREAM_1_2_GAP_CLOSURE.md))
 
 ---
 
@@ -71,13 +71,13 @@ Update this table when PRs merge. Status legend: **Shipped** · **Partial** · *
 
 | Endpoint (spec) | Status | Notes |
 |-----------------|--------|-------|
-| `GET /services` | **Shipped** | Filters, sort, `lat`/`lng`/`radius_km` when `geom` present |
+| `GET /services` | **Shipped** | Filters, sort, `lat`/`lng`/`radius_km` when `geom` present; list rows include `latitude`/`longitude` from PostGIS for map pins |
 | `GET /services/categories` | **Shipped** | Catalog + live counts |
 | `GET /services/match` | **Shipped** | Listing contextual match + Redis cache |
 | `GET /services/:slug` | **Shipped** | Profile + availability snippet |
 | `POST /services/:slug/quote` | **Partial** | Lead creation + heuristic score; email **stub** (`lead-notify-stub`) |
 | `GET /services/:slug/reviews` | **Shipped** | Paginated |
-| `GET /services/bundles`, `POST .../activate` | **Shipped (MVP)** | Activate requires **auth**; **Phase 1** `platformFeeKobo` = 5% of bundle `priceFromKobo` (estimate); **Phase 2** final fee + settlement (Paystack split vs buyer charge) **blocked on product** |
+| `GET /services/bundles`, `POST .../activate` | **Shipped** | Activate requires **auth**; optional `developerProjectId` (JSON metadata + lead message); **Phase 1** `platformFeeKobo` = 5% estimate; **Phase 2** settlement **blocked on product** |
 | `GET /services/:slug/availability` | **Shipped** | Next 30 days on `GET /v1/services/:slug/availability` |
 
 ### 3.3 Specification §3.2 — Provider portal API (`/v1/provider`)
@@ -86,9 +86,18 @@ Update this table when PRs merge. Status legend: **Shipped** · **Partial** · *
 |-----------------|--------|-------|
 | `GET /context`, `GET /dashboard` | **Shipped** | Dashboard builder + tier |
 | `GET/PATCH /profile` | **Shipped** | MVP fields |
-| `GET /leads`, `PATCH /leads/:id` | **Shipped** | Status machine + review invite **stub** on complete |
+| `GET /leads`, `PATCH /leads/:id` | **Shipped** | `lead-status-machine.ts`; on **completed**: `completedJobCount`, notification, review-invite **stub** |
 | `GET/POST /availability` | **Shipped (MVP)** | Post upserts one UTC calendar day |
-| Other spec routes (respond, quote, portfolio, analytics, subscription, KYC, WhatsApp, reviews respond) | **Not started** or **Stub** | Extend `provider.ts` + contracts incrementally |
+| `GET /jobs`, `PATCH /jobs/:id` | **Shipped (MVP)** | `provider.jobs.ts` — active lead statuses as jobs |
+| `GET /analytics/summary` | **Shipped (MVP)** | `provider.analytics.ts` |
+| `GET /reviews`, `PATCH /reviews/:id/respond` | **Partial** | List + provider response |
+| `GET/PATCH /kyc` | **Partial** | Document metadata MVP |
+| `GET/PATCH /settings` | **Shipped (MVP)** | `provider.settings.ts` |
+| `GET /subscription`, `POST /subscription/checkout` | **Partial** | Stub Paystack / direct tier in dev |
+| `GET /whatsapp` | **Partial** | Read connection status; Evolution **not** production |
+| `POST /content/generate` | **Partial** | Caption stub |
+| `GET /v1/me/service-leads`, `POST …/:leadId/review` | **Shipped (MVP)** | `me.service-leads.ts` — buyer ledger + verified review |
+| Other spec routes (dedicated respond/quote, portfolio CRUD) | **Not started** | Extend contracts incrementally |
 
 ### 3.4 Specification §3.3 — Match engine
 
@@ -110,10 +119,10 @@ Update this table when PRs merge. Status legend: **Shipped** · **Partial** · *
 
 | Page | Status | Notes |
 |------|--------|-------|
-| SVC-PUB-01 `/services` | **Partial** | Homepage components; compare to full spec widget list |
-| SVC-PUB-02 directory | **Partial** | `[category]`, `[category]/[segment]` |
-| SVC-PUB-03 profile | **Partial** | Routed as `[category]/[segment]` for provider slug segment (verify SEO parity with spec URL examples) |
-| SVC-PUB-04 bundles | **Partial** | `/services/bundles` lists API + per-bundle activate form (auth) |
+| SVC-PUB-01 `/services` | **Partial** | Homepage + trust stats strip (verified count / fallback); testimonials still P2 |
+| SVC-PUB-02 directory | **Shipped (MVP)** | `[category]`, geo `[segment]`; list/map toggle (`view=map`); Leaflet pins when API returns lat/lng |
+| SVC-PUB-03 profile | **Shipped (MVP)** | `[category]/[segment]` profile branch; `generateMetadata` for SEO |
+| SVC-PUB-04 bundles | **Shipped** | `/services/bundles` + wizard; `?projectId=` → `developerProjectId` on activate |
 | SVC-PUB-05 listing embed | **Shipped** | `ServiceHubListingMatchSection` on `listings/[slug]` |
 | SVC-PUB-06 join | **Partial** | `/services/join` + registration via auth (`service_provider` role in API) |
 
@@ -122,10 +131,18 @@ Update this table when PRs merge. Status legend: **Shipped** · **Partial** · *
 | Area | Status | Notes |
 |------|--------|-------|
 | PRV-01 `/provider` | **Shipped** | Client dashboard via `GET /v1/provider/dashboard` |
-| PRV-02 `/provider/leads` | **Shipped** | List + patch |
+| PRV-02 `/provider/leads` | **Shipped** | List + patch + status machine |
 | PRV-03 `/provider/profile` | **Shipped** | Edit MVP |
-| Availability API + shell routes | **Partial** | `GET/POST /v1/provider/availability` — portal UI still stub-only at `/provider` sub-routes |
-| PRV-04 jobs, PRV-05 WhatsApp, analytics, reviews, content, KYC, subscription, settings | **Stub** | `ProviderRoadmapStub` until APIs exist |
+| PRV-04 `/provider/jobs` | **Partial** | Kanban/list via `GET /v1/provider/jobs` |
+| PRV-05 `/provider/whatsapp` | **Partial** | UI + read API; Evolution behind flag |
+| PRV-06 `/provider/analytics` | **Partial** | Summary charts |
+| PRV-07 `/provider/reviews` | **Partial** | List + respond |
+| PRV-08 `/provider/content` | **Partial** | Generate caption stub |
+| PRV-09 `/provider/kyc` | **Partial** | Upload metadata MVP |
+| PRV-10 `/provider/subscription` | **Partial** | Stub checkout (like agent/developer) |
+| PRV-11 `/provider/settings` | **Partial** | PATCH integrations |
+| Availability | **Partial** | API shipped; dedicated calendar UI TBD |
+| Buyer service ledger (BUY-01) | **Shipped (MVP)** | `GET/POST /v1/me/service-leads*`; `BuyerServiceLeadsList` on dashboard + `/buyer/services`; contract `me-service-leads.ts` |
 
 ---
 
@@ -133,12 +150,12 @@ Update this table when PRs merge. Status legend: **Shipped** · **Partial** · *
 
 Cross-reference [spec §8 weeks 1–8](../ServiceHub_Ecosystem_Specification_v1.0%20(1).md). This matrix is **delivery tracking**, not a substitute for the spec.
 
-| Sprint | Theme (spec) | Repo status (2026-05-16) |
+| Sprint | Theme (spec) | Repo status (2026-05-17) |
 |--------|----------------|---------------------------|
-| **A** | Foundation: tables, directory, homepage, registration | **Partial** — migration + public list/profile/match/categories + provider registration path; bundles API missing |
-| **B** | Match on listings, profiles, provider command center | **Partial** — listing embed + match API + provider dashboard MVP; full PRV-03 spec depth outstanding |
-| **C** | Leads, WhatsApp, jobs, AI scoring | **Partial** — leads + heuristic scoring; WhatsApp worker enqueue **stub**; jobs UI stub; FastAPI `/score-service-lead` **not** wired |
-| **D** | Bundles, Paystack, analytics, KYC, launch | **Partial** — bundle list + activate + seeded catalogs; Paystack provider billing, featured slots, full admin, launch seed still out |
+| **A** | Foundation: tables, directory, homepage, registration | **Partial+** — migration + public list/profile/match/categories + registration; **bundles API shipped** |
+| **B** | Match on listings, profiles, provider command center | **Partial+** — listing embed + match API + provider dashboard; profile/availability depth outstanding |
+| **C** | Leads, WhatsApp, jobs, AI scoring | **Partial+** — lead workflow + status machine + buyer reviews API; provider jobs UI; WhatsApp/Evolution **stub**; FastAPI lead scoring **not** wired |
+| **D** | Bundles, Paystack, analytics, KYC, launch | **Partial** — bundle activate + provider OS MVPs; live Paystack, featured slots, full admin ServiceHub, launch ops out |
 
 ---
 
@@ -146,11 +163,11 @@ Cross-reference [spec §8 weeks 1–8](../ServiceHub_Ecosystem_Specification_v1.
 
 | Stream | Next 3 outcomes |
 |--------|-----------------|
-| **1** | `GET/POST /v1/services/bundles*`, expand `PATCH /v1/provider/leads/:id` with quote fields per spec, admin `PATCH .../providers/:id/verify` |
-| **2** | SVC-PUB-04 real data + activation wizard; directory map toggle; profile page spec parity |
-| **3** | Replace stubs: jobs pipeline tied to lead status; subscription page + `POST /v1/provider/subscription/checkout` stub |
-| **4** | Evolution integration behind flag; match TTL + job schedule docs; optional AI scoring HTTP client |
-| **5** | E2E: directory → profile → quote → provider sees lead; admin list smoke; contract tests for new bundle endpoints |
+| **1** | Quote fields on `PATCH /leads/:id`; admin ServiceHub analytics; optional `GET /me/service-leads/:id` (P2) |
+| **2** | SVC-PUB-01 testimonials; bundle builder polish; optional `e2e/servicehub-public.spec.ts` |
+| **3** | Provider availability calendar UI; portfolio section on profile; tier-gated WhatsApp when Evolution live |
+| **4** | Evolution integration behind flag; 6h match refresh schedule; FastAPI `/score-service-lead` client |
+| **5** | E2E: quote → provider completes → buyer reviews; extend `servicehub-phase-c` + `stub-portals` for provider jobs |
 
 ---
 
@@ -166,7 +183,9 @@ Cross-reference [spec §8 weeks 1–8](../ServiceHub_Ecosystem_Specification_v1.
 | Match worker | `apps/workers/src/provider-match-score.worker.ts` |
 | Marketplace UI | `apps/web/app/services/**`, `apps/web/components/servicehub/**` |
 | Provider UI | `apps/web/app/(dashboard)/provider/**` |
-| Tests | `apps/api/tests/servicehub-*.test.ts`, `provider-portal.test.ts` |
+| Buyer leads API | `apps/api/src/routes/v1/me.service-leads.ts` |
+| Lead workflow lib | `apps/api/src/lib/servicehub/lead-status-machine.ts`, `review-invite-stub.ts` |
+| Tests | `apps/api/tests/servicehub-*.test.ts`, `servicehub-phase-c.test.ts`, `provider-portal.test.ts`, `provider-extensions.test.ts` |
 
 ---
 

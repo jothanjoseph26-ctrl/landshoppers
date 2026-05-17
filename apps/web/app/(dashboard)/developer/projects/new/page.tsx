@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { DeveloperServiceHubBundleCta } from "@/components/servicehub/developer-servicehub-bundle-cta"
 import { createDeveloperProject } from "@/lib/api/developer-portal"
 import { ApiRequestError } from "@/lib/api/client"
 
@@ -175,6 +176,8 @@ export default function NewDeveloperProjectPage() {
           </Button>
         </div>
       </form>
+
+      <DeveloperServiceHubBundleCta city={city} state={state} />
     </div>
   )
 }

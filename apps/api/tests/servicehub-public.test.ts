@@ -88,7 +88,14 @@ function seedListing(id: string, propertyId: string, userId: string) {
   });
 }
 
-function seedServiceProvider(opts: { id: string; userId: string; slug: string; category?: string }) {
+function seedServiceProvider(opts: {
+  id: string;
+  userId: string;
+  slug: string;
+  category?: string;
+  geomLatitude?: number | null;
+  geomLongitude?: number | null;
+}) {
   const now = new Date();
   fakeTables.serviceProviders.push({
     id: opts.id,
@@ -122,11 +129,17 @@ function seedServiceProvider(opts: { id: string; userId: string; slug: string; c
     isFeatured: false,
     featuredUntil: null,
     whatsappPhone: null,
+    whatsappConnected: false,
+    licenseNumber: null,
+    licenseBody: null,
+    kycDocuments: null,
     portfolioItems: [],
     socialLinks: null,
     deletedAt: null,
     createdAt: now,
     updatedAt: now,
+    geomLatitude: opts.geomLatitude ?? null,
+    geomLongitude: opts.geomLongitude ?? null,
   });
 }
 
@@ -498,6 +511,282 @@ describe("ServiceHub bundles API (Phase D slice)", () => {
     });
     expect(r2.status).toBe(201);
     expect(r2.body.data.estimatedPlatformFeeKobo).toBe("49999");
+  });
+
+  it("GET /v1/services returns latitude/longitude when provider has geom", async () => {
+    const ownerId = randomUUID();
+    seedUser(ownerId, "map-coords@example.test");
+    const providerId = randomUUID();
+    seedServiceProvider({
+      id: providerId,
+      userId: ownerId,
+      slug: "map-coords-provider",
+      geomLatitude: 6.5244,
+      geomLongitude: 3.3792,
+    });
+
+    const res = await call<{
+      data: Array<{ slug: string; latitude: number | null; longitude: number | null }>;
+    }>("/v1/services?pageSize=50");
+    expect(res.status).toBe(200);
+    const row = res.body.data.find((p) => p.slug === "map-coords-provider");
+    expect(row?.latitude).toBeCloseTo(6.5244, 4);
+    expect(row?.longitude).toBeCloseTo(3.3792, 4);
+  });
+
+  it("GET /v1/services returns null coordinates when provider has no geom", async () => {
+    const ownerId = randomUUID();
+    seedUser(ownerId, "no-geom@example.test");
+    seedServiceProvider({
+      id: randomUUID(),
+      userId: ownerId,
+      slug: "no-geom-provider",
+    });
+
+    const res = await call<{
+      data: Array<{ slug: string; latitude: number | null; longitude: number | null }>;
+    }>("/v1/services?pageSize=50");
+    expect(res.status).toBe(200);
+    const row = res.body.data.find((p) => p.slug === "no-geom-provider");
+    expect(row?.latitude).toBeNull();
+    expect(row?.longitude).toBeNull();
+  });
+
+  it("POST bundle activate persists developerProjectId in matchedProviders and lead message", async () => {
+    const bundleId = randomUUID();
+    fakeTables.serviceBundles.push({
+      id: bundleId,
+      name: "Dev Project Bundle",
+      slug: "dev-proj-bun",
+      description: "Dev linkage",
+      categories: ["photography"],
+      priceFromKobo: 100n,
+      priceToKobo: 200n,
+      triggerContext: "listing_create",
+      isActive: true,
+      activationCount: 0,
+    });
+
+    const providerOwner = randomUUID();
+    seedUser(providerOwner, "bun-dev-prov@example.test");
+    seedServiceProvider({
+      id: randomUUID(),
+      userId: providerOwner,
+      slug: "bun-dev-photo",
+      category: "photography",
+    });
+
+    const devReg = await call<{ data: { accessToken: string; user: { id: string } } }>(
+      "/v1/auth/register",
+      {
+        method: "POST",
+        body: {
+          email: "bun-dev-user@example.test",
+          password: "Password123!",
+          role: "developer",
+          companyName: "Dev Co",
+        },
+      },
+    );
+    expect(devReg.status).toBe(201);
+    const developerId = fakeTables.developers.find(
+      (d) => d.userId === devReg.body.data!.user.id,
+    )!.id;
+    const projectId = randomUUID();
+    fakeTables.developerProjects.push({
+      id: projectId,
+      developerId,
+      name: "Estate Alpha",
+      slug: "estate-alpha",
+      description: null,
+      shortDescription: null,
+      status: "UPCOMING",
+      propertyType: "estate_unit",
+      address: null,
+      city: "Lagos",
+      state: "Lagos",
+      country: "Nigeria",
+      latitude: null,
+      longitude: null,
+      priceRangeMin: null,
+      priceRangeMax: null,
+      totalUnits: 0,
+      availableUnits: 0,
+      soldUnits: 0,
+      amenities: [],
+      features: [],
+      images: [],
+      floorPlans: [],
+      brochureUrl: null,
+      virtualTourUrl: null,
+      completionDate: null,
+      launchDate: null,
+      isFeatured: false,
+      viewCount: 0,
+      inquiryCount: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+    });
+
+    const res = await call<{ data: { leads: Array<{ leadId: string }> } }>(
+      `/v1/services/bundles/${bundleId}/activate`,
+      {
+        method: "POST",
+        token: devReg.body.data!.accessToken,
+        body: {
+          clientName: "Dev User",
+          clientPhone: "+2348055555555",
+          location: "Lekki",
+          developerProjectId: projectId,
+        },
+      },
+    );
+    expect(res.status).toBe(201);
+
+    const activation = fakeTables.bundleActivations.at(-1)!;
+    const matched = activation.matchedProviders as {
+      developerProjectId?: string;
+      slots?: Array<{ leadId: string }>;
+    };
+    expect(matched.developerProjectId).toBe(projectId);
+    expect(matched.slots?.length).toBe(1);
+
+    const lead = fakeTables.serviceLeads.find((l) => l.id === res.body.data.leads[0]!.leadId);
+    expect(lead?.message).toContain(`Developer project: ${projectId}`);
+  });
+
+  it("POST bundle activate returns 404 for developerProjectId not owned by user", async () => {
+    const bundleId = randomUUID();
+    fakeTables.serviceBundles.push({
+      id: bundleId,
+      name: "Bad Project Bundle",
+      slug: "bad-proj-bun",
+      description: "404 test",
+      categories: ["photography"],
+      priceFromKobo: 100n,
+      priceToKobo: 200n,
+      triggerContext: "listing_create",
+      isActive: true,
+      activationCount: 0,
+    });
+
+    const providerOwner = randomUUID();
+    seedUser(providerOwner, "bun-bad-prov@example.test");
+    seedServiceProvider({
+      id: randomUUID(),
+      userId: providerOwner,
+      slug: "bun-bad-photo",
+      category: "photography",
+    });
+
+    const otherDevId = randomUUID();
+    seedUser(otherDevId, "other-dev@example.test");
+    const developerId = randomUUID();
+    fakeTables.developers.push({
+      id: developerId,
+      userId: otherDevId,
+      companyName: "Other Dev",
+      rcNumber: null,
+      companyAddress: null,
+      companyCity: null,
+      companyState: null,
+      companyPhone: null,
+      companyEmail: null,
+      companyWebsite: null,
+      description: null,
+      isVerified: false,
+      kycStatus: "pending",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+    });
+    const projectId = randomUUID();
+    fakeTables.developerProjects.push({
+      id: projectId,
+      developerId,
+      name: "Other Estate",
+      slug: "other-estate",
+      description: null,
+      shortDescription: null,
+      status: "UPCOMING",
+      propertyType: "estate_unit",
+      address: null,
+      city: "Lagos",
+      state: "Lagos",
+      country: "Nigeria",
+      latitude: null,
+      longitude: null,
+      priceRangeMin: null,
+      priceRangeMax: null,
+      totalUnits: 0,
+      availableUnits: 0,
+      soldUnits: 0,
+      amenities: [],
+      features: [],
+      images: [],
+      floorPlans: [],
+      brochureUrl: null,
+      virtualTourUrl: null,
+      completionDate: null,
+      launchDate: null,
+      isFeatured: false,
+      viewCount: 0,
+      inquiryCount: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+    });
+
+    const buyer = await registerBuyer("bad-proj-buyer");
+    const res = await call<{ error?: { code: string } }>(
+      `/v1/services/bundles/${bundleId}/activate`,
+      {
+        method: "POST",
+        token: buyer.accessToken,
+        body: {
+          clientName: "Buyer",
+          clientPhone: "+2348044444444",
+          location: "Lekki",
+          developerProjectId: projectId,
+        },
+      },
+    );
+    expect(res.status).toBe(404);
+    expect(res.body.error?.code).toBe("DEVELOPER_PROJECT_NOT_FOUND");
+  });
+
+  it("authenticated quote links clientUserId and appears in GET /v1/me/service-leads", async () => {
+    const ownerId = randomUUID();
+    seedUser(ownerId, "auth-quote-owner@example.test");
+    seedServiceProvider({ id: randomUUID(), userId: ownerId, slug: "auth-quote-provider" });
+
+    const buyer = await registerBuyer("auth-quote-buyer");
+
+    const quote = await call<{ data: { leadId: string } }>(
+      "/v1/services/auth-quote-provider/quote",
+      {
+        method: "POST",
+        token: buyer.accessToken,
+        body: {
+          clientName: "Buyer Test",
+          clientPhone: "+2348033333333",
+          message: "Need legal review",
+          serviceRequested: "Legal",
+          location: "Victoria Island, Lagos",
+        },
+      },
+    );
+    expect(quote.status).toBe(201);
+
+    const lead = fakeTables.serviceLeads.find((l) => l.id === quote.body.data.leadId);
+    expect(lead?.clientUserId).toBe(buyer.user.id);
+
+    const list = await call<{ data: Array<{ id: string }> }>("/v1/me/service-leads", {
+      token: buyer.accessToken,
+    });
+    expect(list.status).toBe(200);
+    expect(list.body.data.some((r) => r.id === quote.body.data.leadId)).toBe(true);
   });
 });
 

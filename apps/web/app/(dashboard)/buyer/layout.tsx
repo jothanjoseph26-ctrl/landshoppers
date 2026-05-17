@@ -1,10 +1,12 @@
 "use client"
 
 import {
+  Bell,
   Calendar,
   Clock,
   Heart,
   Home,
+  Mail,
   MessageSquare,
   Search,
   Settings,
@@ -19,7 +21,9 @@ const navItems: PortalNavItem[] = [
   { title: "Saved Listings", href: "/buyer/saved", icon: Heart },
   { title: "Searches", href: "/buyer/searches", icon: Search },
   { title: "Inquiries", href: "/buyer/inquiries", icon: MessageSquare },
+  { title: "Messages", href: "/buyer/messages", icon: Mail },
   { title: "Services", href: "/buyer/services", icon: Briefcase },
+  { title: "Notifications", href: "/buyer/notifications", icon: Bell },
   { title: "Recently viewed", href: "/buyer/recent", icon: Clock },
   { title: "Tours", href: "/buyer/tours", icon: Calendar },
   { title: "Profile", href: "/buyer/profile", icon: User },
