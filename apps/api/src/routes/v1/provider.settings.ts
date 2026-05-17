@@ -9,6 +9,10 @@ import {
 import { ApiError } from "../../lib/errors.js";
 import { prisma } from "../../lib/prisma.js";
 import { providerForUser } from "../../lib/provider-for-user.js";
+import {
+  patchUserProfileScalars,
+  type UserProfileScalarPatch,
+} from "../../lib/user-profile-patch.js";
 import { requireAuth, requireServiceProvider } from "../../middleware/auth.js";
 import type { ApiEnv } from "../../types/env.js";
 
@@ -70,7 +74,7 @@ providerSettingsV1.patch("/", zValidator("json", patchProviderSettingsBodySchema
     existingPrefs["serviceProvider"] = body.preferences.serviceProvider;
   }
 
-  const profileData: Prisma.UserProfileUpdateInput = {};
+  const profileData: UserProfileScalarPatch = {};
   if (body.notifyEmail !== undefined) profileData.notifyEmail = body.notifyEmail;
   if (body.notifySms !== undefined) profileData.notifySms = body.notifySms;
   if (body.notifyPush !== undefined) profileData.notifyPush = body.notifyPush;
@@ -79,18 +83,9 @@ providerSettingsV1.patch("/", zValidator("json", patchProviderSettingsBodySchema
       body.preferences === null ? Prisma.DbNull : (existingPrefs as Prisma.InputJsonValue);
   }
 
-  const profile = row.user.profile
-    ? await prisma.userProfile.update({
-        where: { userId: auth.id },
-        data: profileData,
-      })
-    : await prisma.userProfile.create({
-        data: {
-          userId: auth.id,
-          ...profileData,
-          preferences: (profileData.preferences ?? Prisma.DbNull) as Prisma.InputJsonValue,
-        },
-      });
+  await patchUserProfileScalars(auth.id, Boolean(row.user.profile), profileData);
+
+  const profile = await prisma.userProfile.findUniqueOrThrow({ where: { userId: auth.id } });
 
   return c.json({
     data: settingsJson(row, row.user, profile),

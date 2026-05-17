@@ -6,6 +6,10 @@ import { Hono } from "hono";
 import { patchMeSettingsBodySchema } from "../../contracts/me-settings.js";
 import { ApiError } from "../../lib/errors.js";
 import { prisma } from "../../lib/prisma.js";
+import {
+  patchUserProfileScalars,
+  type UserProfileScalarPatch,
+} from "../../lib/user-profile-patch.js";
 import { requireAuth } from "../../middleware/auth.js";
 import type { ApiEnv } from "../../types/env.js";
 
@@ -85,7 +89,7 @@ meSettingsV1.patch("/", zValidator("json", patchMeSettingsBodySchema), async (c)
     });
   }
 
-  const profileData: PrismaTypes.UserProfileUpdateInput = {};
+  const profileData: UserProfileScalarPatch = {};
   if (body.firstName !== undefined) profileData.firstName = body.firstName;
   if (body.lastName !== undefined) profileData.lastName = body.lastName;
   if (body.city !== undefined) profileData.city = body.city;
@@ -100,18 +104,7 @@ meSettingsV1.patch("/", zValidator("json", patchMeSettingsBodySchema), async (c)
       body.preferences === null ? Prisma.JsonNull : (body.preferences as Prisma.InputJsonValue);
   }
 
-  if (Object.keys(profileData).length > 0) {
-    if (user.profile) {
-      await prisma.userProfile.update({ where: { userId: auth.id }, data: profileData });
-    } else {
-      await prisma.userProfile.create({
-        data: {
-          userId: auth.id,
-          ...profileData,
-        },
-      });
-    }
-  }
+  await patchUserProfileScalars(auth.id, Boolean(user.profile), profileData);
 
   const updated = await prisma.user.findFirst({
     where: { id: auth.id, deletedAt: null },

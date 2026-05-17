@@ -5,6 +5,10 @@ import { Hono } from "hono";
 import { patchAgentSettingsBodySchema } from "../../contracts/agent-settings.js";
 import { ApiError } from "../../lib/errors.js";
 import { prisma } from "../../lib/prisma.js";
+import {
+  patchUserProfileScalars,
+  type UserProfileScalarPatch,
+} from "../../lib/user-profile-patch.js";
 import { requireAgentOrDeveloper, requireAuth } from "../../middleware/auth.js";
 import type { ApiEnv } from "../../types/env.js";
 
@@ -110,7 +114,7 @@ agentSettingsV1.patch("/", zValidator("json", patchAgentSettingsBodySchema), asy
     await prisma.agent.update({ where: { id: agentRow.id }, data: agentData });
   }
 
-  const profileData: Prisma.UserProfileUpdateInput = {};
+  const profileData: UserProfileScalarPatch = {};
   if (body.firstName !== undefined) profileData.firstName = body.firstName;
   if (body.lastName !== undefined) profileData.lastName = body.lastName;
   if (body.city !== undefined) profileData.city = body.city;
@@ -121,13 +125,7 @@ agentSettingsV1.patch("/", zValidator("json", patchAgentSettingsBodySchema), asy
   if (body.notifySms !== undefined) profileData.notifySms = body.notifySms;
   if (body.notifyPush !== undefined) profileData.notifyPush = body.notifyPush;
 
-  if (Object.keys(profileData).length > 0) {
-    if (user.profile) {
-      await prisma.userProfile.update({ where: { userId: auth.id }, data: profileData });
-    } else {
-      await prisma.userProfile.create({ data: { userId: auth.id, ...profileData } });
-    }
-  }
+  await patchUserProfileScalars(auth.id, Boolean(user.profile), profileData);
 
   const [updatedUser, agentRow, developerRow] = await Promise.all([
     prisma.user.findFirst({

@@ -92,7 +92,7 @@ adminPaymentsV1.get("/summary", zValidator("query", adminPaymentsSummaryQuerySch
   let gmvKobo = 0n;
   for (const p of payments) {
     byStatus[p.status] = (byStatus[p.status] ?? 0) + 1;
-    if (p.status === PaymentStatus.success) gmvKobo += p.amount;
+    if (p.status === PaymentStatus.successful) gmvKobo += p.amount;
   }
 
   const activeSubs = await prisma.subscription.count({
