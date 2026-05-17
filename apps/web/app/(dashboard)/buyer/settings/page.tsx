@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { PortalError } from "@/components/dashboard/portal-feedback"
 import {
   fetchBuyerSettings,
   patchBuyerSettings,
@@ -38,8 +39,9 @@ export default function BuyerSettingsPage() {
 
   const token = mounted ? getAccessToken() : null
 
-  const { data, isLoading, mutate } = useSWR(token ? (["buyer-settings"] as const) : null, () =>
+  const { data, error, isLoading, mutate } = useSWR(token ? (["buyer-settings"] as const) : null, () =>
     fetchBuyerSettings(),
+    { shouldRetryOnError: false },
   )
 
   const row: ApiBuyerSettings | undefined = data?.data
@@ -104,6 +106,18 @@ export default function BuyerSettingsPage() {
         <h1 className="text-2xl font-bold md:text-3xl">Settings</h1>
         <p className="text-muted-foreground">Profile, notifications, and account preferences.</p>
       </div>
+
+      {error && (
+        <PortalError
+          title="Couldn't load settings"
+          description={
+            error instanceof ApiRequestError && error.status === 404
+              ? "The settings API was not found. Restart the API on port 4001 and reload."
+              : "Check that the API is running and you are signed in."
+          }
+          onRetry={() => void mutate()}
+        />
+      )}
 
       <Card className="shadow-none">
         <CardHeader className="pb-3">

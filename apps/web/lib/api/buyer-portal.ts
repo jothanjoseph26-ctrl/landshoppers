@@ -7,50 +7,12 @@ function qs(params: Record<string, string | number | boolean | undefined>): stri
   return "?" + entries.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`).join("&")
 }
 
-export type ApiBuyerSettings = {
-  email: string
-  phone: string | null
-  profile: {
-    firstName: string | null
-    lastName: string | null
-    avatarUrl: string | null
-    city: string | null
-    state: string | null
-    country: string | null
-  } | null
-  notifications: {
-    notifyEmail: boolean
-    notifySms: boolean
-    notifyPush: boolean
-  }
-  preferences: Record<string, unknown> | null
-}
-
-export type PatchBuyerSettingsBody = {
-  firstName?: string | null
-  lastName?: string | null
-  city?: string | null
-  state?: string | null
-  country?: string | null
-  avatarUrl?: string | null
-  phone?: string | null
-  notifyEmail?: boolean
-  notifySms?: boolean
-  notifyPush?: boolean
-  preferences?: Record<string, unknown> | null
-}
-
-export async function fetchBuyerSettings() {
-  return apiFetch<{ data: ApiBuyerSettings }>("/v1/me/settings", { auth: true })
-}
-
-export async function patchBuyerSettings(body: PatchBuyerSettingsBody) {
-  return apiFetch<{ data: ApiBuyerSettings }>("/v1/me/settings", {
-    method: "PATCH",
-    auth: true,
-    body,
-  })
-}
+export {
+  fetchBuyerSettings,
+  patchBuyerSettings,
+  type ApiBuyerSettings,
+  type PatchBuyerSettingsBody,
+} from "./portal"
 
 export type ApiBuyerTour = {
   id: string

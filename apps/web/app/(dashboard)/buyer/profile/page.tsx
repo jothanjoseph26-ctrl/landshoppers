@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -21,7 +22,11 @@ export default function BuyerProfilePage() {
       <div>
         <h1 className="text-2xl font-bold md:text-3xl">Profile</h1>
         <p className="text-muted-foreground">
-          Read-only summary of your account. Editing will land with the next vertical slice.
+          Read-only summary of your account. Edit profile and notifications on{" "}
+          <Link href="/buyer/settings" className="text-primary underline-offset-4 hover:underline">
+            Settings
+          </Link>
+          .
         </p>
       </div>
 

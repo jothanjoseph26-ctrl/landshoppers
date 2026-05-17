@@ -225,6 +225,53 @@ export async function softDeleteListing(id: string): Promise<void> {
   await apiFetch(`/v1/listings/${id}`, { method: "DELETE", auth: true })
 }
 
+/* ============== Buyer settings (/v1/me/settings) ============== */
+
+export type ApiBuyerSettings = {
+  email: string
+  phone: string | null
+  profile: {
+    firstName: string | null
+    lastName: string | null
+    avatarUrl: string | null
+    city: string | null
+    state: string | null
+    country: string | null
+  } | null
+  notifications: {
+    notifyEmail: boolean
+    notifySms: boolean
+    notifyPush: boolean
+  }
+  preferences: Record<string, unknown> | null
+}
+
+export type PatchBuyerSettingsBody = {
+  firstName?: string | null
+  lastName?: string | null
+  city?: string | null
+  state?: string | null
+  country?: string | null
+  avatarUrl?: string | null
+  phone?: string | null
+  notifyEmail?: boolean
+  notifySms?: boolean
+  notifyPush?: boolean
+  preferences?: Record<string, unknown> | null
+}
+
+export async function fetchBuyerSettings() {
+  return apiFetch<{ data: ApiBuyerSettings }>("/v1/me/settings", { auth: true })
+}
+
+export async function patchBuyerSettings(body: PatchBuyerSettingsBody) {
+  return apiFetch<{ data: ApiBuyerSettings }>("/v1/me/settings", {
+    method: "PATCH",
+    auth: true,
+    body,
+  })
+}
+
 /* ============== Admin moderation ============== */
 
 export async function fetchAdminPendingListings(
