@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { List, Map, SlidersHorizontal } from "lucide-react"
 import {
@@ -19,7 +20,19 @@ type Props = {
   geoSlug?: string
 }
 
-export function ServiceHubDirectoryControls({ category, sort, view = "list", geoSlug }: Props) {
+export function ServiceHubDirectoryControls(props: Props) {
+  return (
+    <Suspense
+      fallback={
+        <div className="mb-6 h-10 animate-pulse rounded-lg border bg-muted/40" />
+      }
+    >
+      <ServiceHubDirectoryControlsInner {...props} />
+    </Suspense>
+  )
+}
+
+function ServiceHubDirectoryControlsInner({ category, sort, view = "list", geoSlug }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
 

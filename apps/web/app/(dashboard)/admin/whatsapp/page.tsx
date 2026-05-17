@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import useSWR from "swr"
 import { Check, Loader2, MessageCircle, X } from "lucide-react"
@@ -56,7 +56,7 @@ const STATUS_TABS = [
   { label: "Pending", value: "PENDING" },
 ] as const
 
-export default function AdminWhatsappPage() {
+function AdminWhatsappPageInner() {
   const searchParams = useSearchParams()
   const summary = useSWR("admin:whatsapp-summary", fetchAdminWhatsappSummary)
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
@@ -349,6 +349,14 @@ export default function AdminWhatsappPage() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+export default function AdminWhatsappPage() {
+  return (
+    <Suspense fallback={<PortalLoading label="Loading WhatsApp queue..." />}>
+      <AdminWhatsappPageInner />
+    </Suspense>
   )
 }
 
