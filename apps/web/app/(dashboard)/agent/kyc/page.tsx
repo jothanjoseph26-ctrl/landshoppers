@@ -168,7 +168,7 @@ export default function AgentKycPage() {
       )}
 
       {isLoading && !data ? (
-        <div.div className="flex items-center gap-2 text-muted-foreground text-sm">
+        <div className="flex items-center gap-2 text-muted-foreground text-sm">
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
           Loading KYC…
         </div>
@@ -285,7 +285,7 @@ export default function AgentKycPage() {
 
               {!isLocked ? (
                 <div className="grid gap-3 border-t pt-4">
-                  <div.div className="grid gap-2 sm:grid-cols-2">
+                  <div className="grid gap-2 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label>Document type</Label>
                       <select
