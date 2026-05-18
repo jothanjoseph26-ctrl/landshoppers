@@ -53,7 +53,12 @@ type AgentRow = {
   licenseNumber: string | null;
   isVerified: boolean;
   kycStatus: string;
+  kycDocuments: Json | null;
+  kycSubmittedAt: Date | null;
+  kycVerifiedAt: Date | null;
+  kycRejectionReason: string | null;
   bvnHash: string | null;
+  ninHash: string | null;
   verificationBadge: boolean;
   specializations: string[];
   rating: number;
@@ -62,6 +67,7 @@ type AgentRow = {
   totalSales: number;
   yearsOfExperience: number | null;
   commissionEarned: bigint;
+  walletBalance: bigint;
   socialLinks: Json | null;
   deletedAt: Date | null;
   createdAt: Date;
@@ -662,6 +668,7 @@ function createEmptyTables(): Tables {
     developerMemberships: [],
     developerInvites: [],
     subscriptions: [],
+    payments: [],
     auditLogs: [],
     rawWhatsAppMessages: [],
     listingSeoVariants: [],
@@ -1241,7 +1248,12 @@ userModel.create = async ({ data, include }: { data: Record<string, unknown>; in
       licenseNumber: (a.licenseNumber as string | null) ?? null,
       isVerified: Boolean(a.isVerified),
       kycStatus: (a.kycStatus as string) ?? "pending",
+      kycDocuments: (a.kycDocuments as Json | null) ?? null,
+      kycSubmittedAt: (a.kycSubmittedAt as Date | null) ?? null,
+      kycVerifiedAt: (a.kycVerifiedAt as Date | null) ?? null,
+      kycRejectionReason: (a.kycRejectionReason as string | null) ?? null,
       bvnHash: (a.bvnHash as string | null) ?? null,
+      ninHash: (a.ninHash as string | null) ?? null,
       verificationBadge: Boolean(a.verificationBadge),
       specializations: (a.specializations as string[] | undefined) ?? [],
       rating: 0,
@@ -1250,6 +1262,7 @@ userModel.create = async ({ data, include }: { data: Record<string, unknown>; in
       totalSales: 0,
       yearsOfExperience: null,
       commissionEarned: (a.commissionEarned as bigint | undefined) ?? 0n,
+      walletBalance: (a.walletBalance as bigint | undefined) ?? 0n,
       socialLinks: null,
       deletedAt: null,
       createdAt: new Date(),
@@ -1788,7 +1801,12 @@ const agentModel = buildModel<AgentRow>(
     licenseNumber: (data["licenseNumber"] as string | null) ?? null,
     isVerified: Boolean(data["isVerified"]),
     kycStatus: (data["kycStatus"] as string) ?? "pending",
+    kycDocuments: (data["kycDocuments"] as Json | null) ?? null,
+    kycSubmittedAt: (data["kycSubmittedAt"] as Date | null) ?? null,
+    kycVerifiedAt: (data["kycVerifiedAt"] as Date | null) ?? null,
+    kycRejectionReason: (data["kycRejectionReason"] as string | null) ?? null,
     bvnHash: (data["bvnHash"] as string | null) ?? null,
+    ninHash: (data["ninHash"] as string | null) ?? null,
     verificationBadge: Boolean(data["verificationBadge"]),
     specializations: (data["specializations"] as string[] | undefined) ?? [],
     rating: 0,
@@ -1797,6 +1815,7 @@ const agentModel = buildModel<AgentRow>(
     totalSales: 0,
     yearsOfExperience: null,
     commissionEarned: (data["commissionEarned"] as bigint | undefined) ?? 0n,
+    walletBalance: (data["walletBalance"] as bigint | undefined) ?? 0n,
     socialLinks: null,
     deletedAt: null,
     createdAt: new Date(),

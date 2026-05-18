@@ -68,6 +68,80 @@ test.describe("@smoke stub-closure portals", () => {
     await expect(page.getByText(/no tour requests yet/i)).toBeVisible()
   })
 
+  test("agent content studio generates captions", async ({ page }) => {
+    await page.addInitScript(() => {
+      sessionStorage.setItem("ls_access_token", "playwright-agent-content")
+    })
+
+    await page.route("**/v1/agent/context", async (route) => {
+      if (await fulfillOptions(route)) return
+      await route.fulfill({
+        status: 200,
+        headers: { ...corsHeaders, "content-type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            persona: "agent",
+            userId: "00000000-0000-0000-0000-000000000001",
+            email: "agent@example.test",
+            displayName: "Stub Agent",
+            agencyName: "Stub Agency",
+            city: "Lagos",
+            state: "Lagos",
+            avatarUrl: null,
+            tier: "pro",
+            subscriptionPlan: null,
+            subscriptionStatus: null,
+            rating: 0,
+            reviewCount: 0,
+            verification: {
+              emailVerified: true,
+              phoneVerified: false,
+              bvnOnFile: false,
+              agentVerifiedBadge: false,
+              kycStatus: "pending",
+            },
+            paystackConfigured: false,
+            featureFlags: { agentWhatsappEnabled: false, agentAiInsightsEnabled: true },
+          },
+        }),
+      })
+    })
+
+    await page.route("**/v1/agent/listings**", async (route) => {
+      if (await fulfillOptions(route)) return
+      await route.fulfill({
+        status: 200,
+        headers: { ...corsHeaders, "content-type": "application/json" },
+        body: JSON.stringify({
+          data: [],
+          meta: { page: 1, pageSize: 50, total: 0, totalPages: 0 },
+        }),
+      })
+    })
+
+    await page.route("**/v1/agent/content/generate", async (route) => {
+      if (await fulfillOptions(route)) return
+      if (route.request().method() !== "POST") return route.continue()
+      await route.fulfill({
+        status: 200,
+        headers: { ...corsHeaders, "content-type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            description: null,
+            mediaBrief: null,
+            captions: [{ id: "1", platform: "instagram", text: "Stub caption for E2E." }],
+            disclaimer: "Stub",
+          },
+        }),
+      })
+    })
+
+    await page.goto("/agent/content")
+    await expect(page.getByRole("heading", { name: /content studio/i })).toBeVisible()
+    await page.getByRole("button", { name: /^generate$/i }).click()
+    await expect(page.getByText(/stub caption for e2e/i)).toBeVisible()
+  })
+
   test("agent analytics and settings pages render", async ({ page }) => {
     await page.addInitScript(() => {
       sessionStorage.setItem("ls_access_token", "playwright-agent-stub")

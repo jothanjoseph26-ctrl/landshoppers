@@ -30,6 +30,9 @@ import { rateLimit } from "../../middleware/rate-limit.js";
 import type { ApiEnv } from "../../types/env.js";
 import { z } from "zod";
 import { agentAnalyticsV1 } from "./agent.analytics.js";
+import { agentCommissionsV1 } from "./agent.commissions.js";
+import { agentKycV1 } from "./agent.kyc.js";
+import { agentContentV1 } from "./agent.content.js";
 import { agentSettingsV1 } from "./agent.settings.js";
 import { agentSubscriptionV1 } from "./agent.subscription.js";
 
@@ -300,5 +303,8 @@ agentScopedV1.post(
 );
 
 agentScopedV1.route("/analytics", agentAnalyticsV1);
+agentScopedV1.route("/commissions", agentCommissionsV1);
+agentScopedV1.route("/kyc", agentKycV1);
+agentScopedV1.route("/content", agentContentV1);
 agentScopedV1.route("/subscription", agentSubscriptionV1);
 agentScopedV1.route("/settings", agentSettingsV1);

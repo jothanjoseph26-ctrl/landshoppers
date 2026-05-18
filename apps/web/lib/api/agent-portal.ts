@@ -304,3 +304,108 @@ export async function patchAgentSettings(body: PatchAgentSettingsBody) {
     body,
   })
 }
+
+export type AgentContentKind = "description" | "captions" | "media_brief"
+
+export type ApiAgentContentCaption = {
+  id: string
+  platform: string
+  text: string
+}
+
+export type ApiAgentContentGenerateResult = {
+  description: string | null
+  captions: ApiAgentContentCaption[]
+  mediaBrief: string | null
+  disclaimer: string
+}
+
+export type ApiAgentCommissions = {
+  summary: {
+    commissionEarnedKobo: string
+    walletBalanceKobo: string
+    pendingPayoutKobo: string
+    paidOutKobo: string
+    earningsAvailable: boolean
+    estimatedMonthlyNgKobo: string | null
+    tier: AgentPortalTier
+  }
+  transactions: Array<{
+    id: string
+    type: string
+    status: string
+    amountKobo: string
+    currency: string
+    reference: string
+    paidAt: string | null
+    createdAt: string
+  }>
+  closedDeals: Array<{
+    id: string
+    listingTitle: string
+    closedAt: string
+    estimatedCommissionKobo: string
+    payoutStatus: "accrued" | "paid"
+  }>
+  disclaimer: string
+}
+
+export type ApiAgentKycDocument = {
+  type: string
+  label?: string
+  externalUrl: string
+  uploadedAt?: string
+}
+
+export type ApiAgentKyc = {
+  agentId: string
+  agencyName: string | null
+  email: string
+  licenseNumber: string | null
+  kycStatus: string
+  kycSubmittedAt: string | null
+  kycVerifiedAt: string | null
+  kycRejectionReason: string | null
+  isVerified: boolean
+  verificationBadge: boolean
+  bvnOnFile: boolean
+  ninOnFile: boolean
+  kycDocuments: ApiAgentKycDocument[] | null
+  checklist: Array<{ id: string; label: string; complete: boolean }>
+}
+
+export async function fetchAgentKyc() {
+  const res = await apiFetch<{ data: ApiAgentKyc }>("/v1/agent/kyc", { auth: true })
+  return res.data
+}
+
+export async function patchAgentKyc(body: {
+  licenseNumber?: string | null
+  kycDocuments?: ApiAgentKycDocument[]
+  submitForReview?: boolean
+}) {
+  const res = await apiFetch<{ data: ApiAgentKyc }>("/v1/agent/kyc", {
+    method: "PATCH",
+    auth: true,
+    body,
+  })
+  return res.data
+}
+
+export async function fetchAgentCommissions() {
+  const res = await apiFetch<{ data: ApiAgentCommissions }>("/v1/agent/commissions", { auth: true })
+  return res.data
+}
+
+export async function postAgentContentGenerate(body: {
+  listingId?: string
+  kind?: AgentContentKind
+  tone?: "professional" | "friendly"
+}) {
+  const res = await apiFetch<{ data: ApiAgentContentGenerateResult }>("/v1/agent/content/generate", {
+    method: "POST",
+    auth: true,
+    body,
+  })
+  return res.data
+}
