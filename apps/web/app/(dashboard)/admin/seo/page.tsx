@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import useSWR from "swr"
 import { Check, Loader2, X } from "lucide-react"
@@ -43,6 +43,14 @@ import { usePortalData } from "@/lib/api/use-portal-data"
 import { formatRelativeTime } from "@/lib/format"
 
 export default function AdminSeoPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-muted-foreground">Loading…</div>}>
+      <AdminSeoPageInner />
+    </Suspense>
+  )
+}
+
+function AdminSeoPageInner() {
   const searchParams = useSearchParams()
   const summary = useSWR("admin:seo-summary", fetchAdminSeoSummary)
   const [statusFilter, setStatusFilter] = useState<string>("draft")
