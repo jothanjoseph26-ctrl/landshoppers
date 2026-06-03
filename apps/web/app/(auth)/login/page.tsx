@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Eye, EyeOff, Mail, Lock, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,13 +10,28 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { authUserRole, dashboardPathForRole, formatAuthError, loginAccount } from "@/lib/api/auth"
+import { getAccessToken } from "@/lib/api/auth-session"
 import { ApiRequestError } from "@/lib/api/client"
+import { decodeAccessTokenRole, portalPrefixForRole } from "@/lib/portal-routing"
 
 const LOGIN_FALLBACK_HINT =
   "Sign-in failed. If the API returns 501, that route is not implemented yet."
 
-export default function LoginPage() {
+function loginDestination(next: string | null, role: string | undefined): string {
+  const home = dashboardPathForRole(role)
+  if (next && next.startsWith("/") && !next.startsWith("//")) {
+    const expected = portalPrefixForRole(role)
+    if (expected && (next === expected || next.startsWith(`${expected}/`))) {
+      return next
+    }
+  }
+  return home
+}
+
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const nextAfterLogin = searchParams.get("next")
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [authMessage, setAuthMessage] = useState<string | null>(null)
@@ -35,7 +50,13 @@ export default function LoginPage() {
         email: formData.email,
         password: formData.password,
       })
-      router.push(dashboardPathForRole(authUserRole(result)))
+      const role =
+        authUserRole(result) ??
+        (() => {
+          const token = getAccessToken()
+          return token ? decodeAccessTokenRole(token) : undefined
+        })()
+      router.push(loginDestination(nextAfterLogin, role))
     } catch (err) {
       if (err instanceof ApiRequestError) {
         setAuthMessage(formatAuthError(err, LOGIN_FALLBACK_HINT))
@@ -170,5 +191,22 @@ export default function LoginPage() {
         </p>
       </CardFooter>
     </Card>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <Card className="border-0 shadow-lg">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
+            <CardDescription>Loading…</CardDescription>
+          </CardHeader>
+        </Card>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   )
 }
