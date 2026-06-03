@@ -17,7 +17,6 @@ on:
 #   NEXT_PUBLIC_MAPBOX_TOKEN   (add your Mapbox token when ready)
 
 permissions:
-  id-token: write   # needed for OIDC token exchange
   contents: read
 
 env:
@@ -37,11 +36,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Authenticate to AWS via OIDC (no long-lived access keys needed)
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/github-actions-landshoppers
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Login to Amazon ECR
