@@ -1,0 +1,174 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [main]
+
+# GitHub Actions Variables (Settings → Secrets and variables → Actions → Variables):
+#   AWS_ACCOUNT_ID             107094296860
+#   AWS_REGION                 us-west-1
+#   NEXT_PUBLIC_API_URL        https://api.landshoppersrealty.com.ng
+#   NEXT_PUBLIC_APP_URL        https://landshoppersrealty.com.ng
+#   NEXT_PUBLIC_SALES_WHATSAPP 2340000000000
+#   PRIVATE_SUBNET_IDS         (run: terraform output private_subnet_ids  after first apply)
+#   ECS_SECURITY_GROUP_ID      (run: terraform output ecs_security_group_id after first apply)
+#
+# GitHub Secrets (Settings → Secrets and variables → Actions → Secrets):
+#   NEXT_PUBLIC_MAPBOX_TOKEN   (add your Mapbox token when ready)
+
+permissions:
+  id-token: write   # needed for OIDC token exchange
+  contents: read
+
+env:
+  AWS_REGION:   ${{ vars.AWS_REGION }}
+  ECR_REGISTRY: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
+  ECS_CLUSTER:  landshoppers
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # CI runs in parallel via ci.yml — deploy proceeds independently on main push
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Authenticate to AWS via OIDC (no long-lived access keys needed)
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/github-actions-landshoppers
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ── Build API ─────────────────────────────────────────────────────────
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.api
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/landshoppers-api:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/landshoppers-api:latest
+          cache-from: type=gha,scope=api
+          cache-to:   type=gha,scope=api,mode=max
+
+      # ── Build Workers ─────────────────────────────────────────────────────
+      - name: Build and push Workers image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.workers
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/landshoppers-workers:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/landshoppers-workers:latest
+          cache-from: type=gha,scope=workers
+          cache-to:   type=gha,scope=workers,mode=max
+
+      # ── Build AI Service ──────────────────────────────────────────────────
+      - name: Build and push AI Service image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/ai-service/Dockerfile
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/landshoppers-ai:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/landshoppers-ai:latest
+          cache-from: type=gha,scope=ai
+          cache-to:   type=gha,scope=ai,mode=max
+
+      # ── Build Web (NEXT_PUBLIC_* baked at build time) ─────────────────────
+      - name: Build and push Web image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
+            NEXT_PUBLIC_MAPBOX_TOKEN=${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
+            NEXT_PUBLIC_SALES_WHATSAPP=${{ vars.NEXT_PUBLIC_SALES_WHATSAPP }}
+          tags: |
+            ${{ env.ECR_REGISTRY }}/landshoppers-web:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/landshoppers-web:latest
+          cache-from: type=gha,scope=web
+          cache-to:   type=gha,scope=web,mode=max
+
+      # ── Run DB migrations via one-off ECS task ────────────────────────────
+      - name: Run database migrations
+        run: |
+          TASK_ARN=$(aws ecs run-task \
+            --cluster $ECS_CLUSTER \
+            --task-definition landshoppers-migrate \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[${{ vars.PRIVATE_SUBNET_IDS }}],securityGroups=[${{ vars.ECS_SECURITY_GROUP_ID }}],assignPublicIp=DISABLED}" \
+            --query 'tasks[0].taskArn' --output text)
+          echo "Migration task: $TASK_ARN"
+          aws ecs wait tasks-stopped \
+            --cluster $ECS_CLUSTER \
+            --tasks "$TASK_ARN"
+          EXIT_CODE=$(aws ecs describe-tasks \
+            --cluster $ECS_CLUSTER \
+            --tasks "$TASK_ARN" \
+            --query 'tasks[0].containers[0].exitCode' --output text)
+          echo "Migration exit code: $EXIT_CODE"
+          [ "$EXIT_CODE" = "0" ] || exit 1
+
+      # ── Rolling deploy (ECS waits for new tasks to become healthy) ─────────
+      - name: Deploy API
+        run: |
+          aws ecs update-service \
+            --cluster $ECS_CLUSTER \
+            --service landshoppers-api \
+            --force-new-deployment \
+            --query 'service.serviceName' --output text
+          aws ecs wait services-stable \
+            --cluster $ECS_CLUSTER \
+            --services landshoppers-api
+
+      - name: Deploy Workers
+        run: |
+          aws ecs update-service \
+            --cluster $ECS_CLUSTER \
+            --service landshoppers-workers \
+            --force-new-deployment \
+            --query 'service.serviceName' --output text
+          aws ecs wait services-stable \
+            --cluster $ECS_CLUSTER \
+            --services landshoppers-workers
+
+      - name: Deploy AI Service
+        run: |
+          aws ecs update-service \
+            --cluster $ECS_CLUSTER \
+            --service landshoppers-ai \
+            --force-new-deployment \
+            --query 'service.serviceName' --output text
+          aws ecs wait services-stable \
+            --cluster $ECS_CLUSTER \
+            --services landshoppers-ai
+
+      - name: Deploy Web
+        run: |
+          aws ecs update-service \
+            --cluster $ECS_CLUSTER \
+            --service landshoppers-web \
+            --force-new-deployment \
+            --query 'service.serviceName' --output text
+          aws ecs wait services-stable \
+            --cluster $ECS_CLUSTER \
+            --services landshoppers-web

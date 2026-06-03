@@ -1,0 +1,49 @@
+# Copy to terraform.tfvars and fill in the secret values.
+# Never commit terraform.tfvars — it is git-ignored.
+
+aws_region     = "us-west-1"
+aws_account_id = "107094296860"
+environment    = "production"
+app_domain     = "landshoppersrealty.com.ng"
+
+github_org  = "FILL_IN"          # your GitHub username or org
+github_repo = "landshoppers"
+
+# ── Database (Neon) ──────────────────────────────────────────────────────────
+database_url = "postgresql://user:pass@pooler.neon.tech/landshoppers?sslmode=require&channel_binding=require&schema=public"
+direct_url   = "postgresql://user:pass@direct.neon.tech/landshoppers?sslmode=require&channel_binding=require&schema=public"
+
+# ── Auth ─────────────────────────────────────────────────────────────────────
+jwt_secret = "FILL_IN_min_32_chars"
+
+# ── External APIs ─────────────────────────────────────────────────────────────
+anthropic_api_key       = "sk-ant-..."
+openai_api_key          = "sk-..."
+resend_api_key          = "re_..."
+termii_api_key          = ""
+paystack_secret_key     = "sk_live_..."
+flutterwave_secret_key  = ""
+stripe_secret_key       = "sk_live_..."
+dojah_secret_key        = ""
+dojah_app_id            = ""
+mapbox_token            = "pk.eyJ..."
+evolution_api_url       = ""
+evolution_api_key       = ""
+whatsapp_webhook_secret = ""
+
+# ── Compute ───────────────────────────────────────────────────────────────────
+web_cpu     = 256
+web_memory  = 512
+api_cpu     = 512
+api_memory  = 1024
+ai_cpu      = 1024
+ai_memory   = 2048
+workers_cpu    = 256
+workers_memory = 512
+
+# ── Redis (~$12/mo for t4g.micro) ────────────────────────────────────────────
+redis_node_type = "cache.t4g.micro"
+
+# ── OpenSearch (optional, ~$25/mo minimum) ────────────────────────────────────
+enable_opensearch        = false
+opensearch_instance_type = "t3.small.search"
