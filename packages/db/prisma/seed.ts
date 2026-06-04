@@ -99,8 +99,9 @@ async function ensureSeedDeveloperPrincipal() {
     });
   }
 
-  if (!user.developer) throw new Error(`seed: developer record missing for ${email}`);
-  return user;
+  const developer = user.developer;
+  if (!developer) throw new Error(`seed: developer record missing for ${email}`);
+  return { user, developer };
 }
 
 /** Framework Week 2 Agent 1: seed targets — 8 properties, 6 agents, 6 service providers (+ demo users). */
@@ -889,7 +890,7 @@ async function main() {
     agents.push({ userId: u.id, agentId: u.agent.id });
   }
 
-  const developerUser = await ensureSeedDeveloperPrincipal();
+  const { developer: seedDeveloper } = await ensureSeedDeveloperPrincipal();
 
   for (const p of PROVIDER_SEEDS) {
     await prisma.user.upsert({
@@ -1040,7 +1041,7 @@ async function main() {
     const p = await prisma.developerProject.upsert({
       where: { slug: row.slug },
       update: {
-        developerId: developerUser.developer.id,
+        developerId: seedDeveloper.id,
         name: row.name,
         shortDescription: row.shortDescription,
         description: row.description,
@@ -1062,7 +1063,7 @@ async function main() {
         viewCount: row.viewCount,
       },
       create: {
-        developerId: developerUser.developer.id,
+        developerId: seedDeveloper.id,
         name: row.name,
         slug: row.slug,
         shortDescription: row.shortDescription,
@@ -1122,7 +1123,7 @@ async function main() {
   await prisma.$executeRaw`
     UPDATE developer_projects
     SET geom = ST_SetSRID(ST_MakePoint(longitude::double precision, latitude::double precision), 4326)::geography
-    WHERE "developerId" = ${developerUser.developer.id}::uuid
+    WHERE "developerId" = ${seedDeveloper.id}::uuid
       AND latitude IS NOT NULL AND longitude IS NOT NULL
   `;
 
@@ -1174,12 +1175,12 @@ async function main() {
   }
 
   const devStats = await prisma.developerProject.aggregate({
-    where: { developerId: developerUser.developer.id, deletedAt: null },
+    where: { developerId: seedDeveloper.id, deletedAt: null },
     _count: { id: true },
     _sum: { soldUnits: true },
   });
   await prisma.developer.update({
-    where: { id: developerUser.developer.id },
+    where: { id: seedDeveloper.id },
     data: {
       totalProjects: devStats._count.id,
       totalUnitsSold: devStats._sum.soldUnits ?? 0,
@@ -1191,7 +1192,7 @@ async function main() {
       where: { email: "developer@example.test" },
       include: { developer: true },
     });
-    if (legacyDemo?.developer && legacyDemo.developer.id !== developerUser.developer.id) {
+    if (legacyDemo?.developer && legacyDemo.developer.id !== seedDeveloper.id) {
       const legacyStats = await prisma.developerProject.aggregate({
         where: { developerId: legacyDemo.developer.id, deletedAt: null },
         _count: { id: true },
