@@ -15,6 +15,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/landshoppers_test?schema=public
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/landshoppers_test?schema=public
       JWT_SECRET: ci-test-jwt-secret-not-for-production-use!!
       LANDSHOPPERS_PYTHON: python3
 
@@ -47,16 +48,30 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
-      - name: Lint (TypeScript & package no-ops)
-        run: pnpm turbo run lint
+      - name: Generate Prisma client
+        run: pnpm --filter @landshoppers/db exec prisma generate
+
+      - name: Lint TypeScript packages
+        run: |
+          pnpm --filter @landshoppers/contracts run lint
+          pnpm --filter @landshoppers/db run lint
+          pnpm --filter @landshoppers/search-listing run lint
+          pnpm --filter @landshoppers/servicehub-match run lint
+          pnpm --filter @landshoppers/api run lint
+          pnpm --filter @landshoppers/workers run lint
+          pnpm --filter @landshoppers/web run lint
+
+      - name: Lint AI service (Python compileall)
+        working-directory: apps/ai-service
+        run: python3 -m compileall -q app
 
       - name: AI service tests (pytest)
         working-directory: apps/ai-service
         run: |
           pip install -r requirements-dev.txt
-          python -m pytest -q
+          python3 -m pytest -q
 
       - name: Migrate (verify SQL + PostGIS geography add-on)
         run: cd packages/db && pnpm exec prisma migrate deploy && pnpm exec prisma generate
@@ -64,5 +79,15 @@ jobs:
       - name: Verify PostGIS (extension + geom + GIST indexes)
         run: pnpm --filter @landshoppers/db run verify:postgis
 
-      - name: Build (web + prisma generate + api tsc)
-        run: pnpm turbo run build
+      - name: Build packages and apps
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:4000
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          NEXT_PUBLIC_MAPBOX_TOKEN: pk.ci-placeholder
+          NEXT_PUBLIC_SALES_WHATSAPP: "2340000000000"
+        run: |
+          pnpm --filter @landshoppers/search-listing run build
+          pnpm --filter @landshoppers/servicehub-match run build
+          pnpm --filter @landshoppers/workers exec tsc -p tsconfig.json
+          pnpm --filter @landshoppers/api exec tsc -p tsconfig.json
+          pnpm --filter @landshoppers/web run build

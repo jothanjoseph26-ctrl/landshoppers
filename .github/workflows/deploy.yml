@@ -3,18 +3,18 @@ name: Deploy to AWS
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
   id-token: write
 
 env:
-  AWS_REGION:   us-west-1
+  AWS_REGION: us-west-1
   AWS_ACCOUNT_ID: "107094296860"
-  # IAM role from `terraform output github_actions_role_arn` (OIDC; not a secret)
   AWS_DEPLOY_ROLE_ARN: arn:aws:iam::107094296860:role/github-actions-landshoppers
   ECR_REGISTRY: 107094296860.dkr.ecr.us-west-1.amazonaws.com
-  ECS_CLUSTER:  landshoppers
+  ECS_CLUSTER: landshoppers
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 concurrency:
@@ -28,20 +28,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
+      # Prefer repository secrets when set; otherwise GitHub OIDC → IAM role.
+      - name: Configure AWS credentials (access keys)
+        if: ${{ secrets.AWS_ACCESS_KEY_ID != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure AWS credentials (OIDC)
+        if: ${{ secrets.AWS_ACCESS_KEY_ID == '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+
       - name: Login to Amazon ECR
-        id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # ── Build API ─────────────────────────────────────────────────────────
       - name: Build and push API image
         uses: docker/build-push-action@v5
         with:
@@ -52,9 +63,8 @@ jobs:
             ${{ env.ECR_REGISTRY }}/landshoppers-api:${{ github.sha }}
             ${{ env.ECR_REGISTRY }}/landshoppers-api:latest
           cache-from: type=gha,scope=api
-          cache-to:   type=gha,scope=api,mode=max
+          cache-to: type=gha,scope=api,mode=max
 
-      # ── Build Workers ─────────────────────────────────────────────────────
       - name: Build and push Workers image
         uses: docker/build-push-action@v5
         with:
@@ -65,9 +75,8 @@ jobs:
             ${{ env.ECR_REGISTRY }}/landshoppers-workers:${{ github.sha }}
             ${{ env.ECR_REGISTRY }}/landshoppers-workers:latest
           cache-from: type=gha,scope=workers
-          cache-to:   type=gha,scope=workers,mode=max
+          cache-to: type=gha,scope=workers,mode=max
 
-      # ── Build AI Service ──────────────────────────────────────────────────
       - name: Build and push AI Service image
         uses: docker/build-push-action@v5
         with:
@@ -78,9 +87,8 @@ jobs:
             ${{ env.ECR_REGISTRY }}/landshoppers-ai:${{ github.sha }}
             ${{ env.ECR_REGISTRY }}/landshoppers-ai:latest
           cache-from: type=gha,scope=ai
-          cache-to:   type=gha,scope=ai,mode=max
+          cache-to: type=gha,scope=ai,mode=max
 
-      # ── Build Web (NEXT_PUBLIC_* baked at build time) ─────────────────────
       - name: Build and push Web image
         uses: docker/build-push-action@v5
         with:
@@ -90,15 +98,13 @@ jobs:
           build-args: |
             NEXT_PUBLIC_API_URL=https://api.landshoppersrealty.com.ng
             NEXT_PUBLIC_APP_URL=https://landshoppersrealty.com.ng
-            NEXT_PUBLIC_MAPBOX_TOKEN=${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
             NEXT_PUBLIC_SALES_WHATSAPP=2340000000000
           tags: |
             ${{ env.ECR_REGISTRY }}/landshoppers-web:${{ github.sha }}
             ${{ env.ECR_REGISTRY }}/landshoppers-web:latest
           cache-from: type=gha,scope=web
-          cache-to:   type=gha,scope=web,mode=max
+          cache-to: type=gha,scope=web,mode=max
 
-      # ── Run DB migrations via one-off ECS task ────────────────────────────
       - name: Run database migrations
         run: |
           TASK_ARN=$(aws ecs run-task \
@@ -115,7 +121,6 @@ jobs:
           echo "Migration exit code: $EXIT_CODE"
           [ "$EXIT_CODE" = "0" ] || exit 1
 
-      # ── Rolling deploy ─────────────────────────────────────────────────────
       - name: Deploy API
         run: |
           aws ecs update-service --cluster $ECS_CLUSTER --service landshoppers-api --force-new-deployment --query 'service.serviceName' --output text

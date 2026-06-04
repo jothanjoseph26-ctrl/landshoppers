@@ -23,6 +23,7 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @landshoppers/db exec prisma generate \
   && pnpm --filter @landshoppers/search-listing run build \
   && pnpm --filter @landshoppers/servicehub-match run build \
+  && pnpm --filter @landshoppers/contracts run build \
   && pnpm --filter @landshoppers/workers exec tsc -p tsconfig.json
 
 ENV NODE_ENV=production

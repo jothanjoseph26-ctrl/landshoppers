@@ -1,18 +1,16 @@
-# AI service — Node.js 20 + Python 3.12 for the pnpm build step (compileall).
-# Deploy on Railway: set Dockerfile path to apps/ai-service/Dockerfile.
-FROM node:20-slim
+# AI service — FastAPI via uvicorn (Python) + pnpm workspace launcher
+FROM node:22-bookworm-slim
 
 WORKDIR /app
 
-# Install Python 3.12 required by scripts/python-module.mjs during build and runtime.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3.12 \
-    python3.12-venv \
+RUN apt-get update -y \
+  && apt-get install -y --no-install-recommends \
+    python3 \
     python3-pip \
+    python3-venv \
+    ca-certificates \
+  && ln -sf /usr/bin/python3 /usr/local/bin/python \
   && rm -rf /var/lib/apt/lists/*
-
-# Make `python` resolve to python3.12 so the build script finds it.
-RUN ln -sf /usr/bin/python3.12 /usr/local/bin/python
 
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
@@ -24,11 +22,12 @@ COPY scripts ./scripts
 
 RUN pnpm install --frozen-lockfile
 
-# Install Python dependencies needed at runtime.
-RUN pip install --no-cache-dir --break-system-packages -r apps/ai-service/requirements.txt
+WORKDIR /app/apps/ai-service
+RUN pip install --no-cache-dir --break-system-packages -r requirements.txt \
+  && python3 -m compileall -q app
 
-RUN pnpm --filter @landshoppers/ai-service build
-
+WORKDIR /app
 ENV NODE_ENV=production
 ENV PYTHONUNBUFFERED=1
+ENV LANDSHOPPERS_PYTHON=python3
 CMD ["pnpm", "--filter", "@landshoppers/ai-service", "start"]
