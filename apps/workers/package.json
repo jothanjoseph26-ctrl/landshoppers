@@ -8,7 +8,7 @@
     "start": "tsx src/index.ts",
     "prebuild": "pnpm --filter @landshoppers/db run generate",
     "build": "tsc -p tsconfig.json",
-    "lint": "tsc --noEmit -p tsconfig.json",
+    "lint": "pnpm exec tsc --noEmit -p tsconfig.json",
     "enqueue-smoke": "tsx src/cli/enqueue-smoke.ts"
   },
   "exports": {

@@ -8,7 +8,7 @@
     "prebuild": "pnpm --filter @landshoppers/db run generate",
     "build": "tsc -p tsconfig.json",
     "start": "tsx src/index.ts",
-    "lint": "tsc --noEmit -p tsconfig.json",
+    "lint": "pnpm exec tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "search:bootstrap": "tsx src/scripts/bootstrap-opensearch.ts"

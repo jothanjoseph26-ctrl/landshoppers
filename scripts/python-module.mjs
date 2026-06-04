@@ -33,8 +33,11 @@ for (const localAppDataPath of localAppDataCandidates) {
   }
 }
 
+candidates.push({ command: "python3", args: [] });
 candidates.push({ command: "python", args: [] });
-candidates.push({ command: "py", args: ["-3"] });
+if (process.platform === "win32") {
+  candidates.push({ command: "py", args: ["-3"] });
+}
 
 function canRunPython(candidate) {
   const result = spawnSync(candidate.command, [...candidate.args, "--version"], {

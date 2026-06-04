@@ -10,8 +10,8 @@
     }
   },
   "scripts": {
-    "build": "tsc --noEmit -p tsconfig.json",
-    "lint": "tsc --noEmit -p tsconfig.json",
+    "build": "pnpm exec tsc --noEmit -p tsconfig.json",
+    "lint": "pnpm exec tsc --noEmit -p tsconfig.json",
     "test": "vitest run"
   },
   "dependencies": {
