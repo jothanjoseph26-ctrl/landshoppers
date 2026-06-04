@@ -4,6 +4,11 @@ FROM node:22-bookworm-slim
 
 WORKDIR /app
 
+# Prisma 7 query engine on Debian slim needs OpenSSL.
+RUN apt-get update -y \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 
@@ -14,10 +19,16 @@ COPY scripts ./scripts
 
 # prisma generate does not need a live DB; prisma/config expects a URL string at tooling time.
 ENV DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/dummy?schema=public"
+ENV DIRECT_URL="postgresql://postgres:postgres@127.0.0.1:5432/dummy?schema=public"
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @landshoppers/db exec prisma generate
-RUN pnpm turbo run build --filter=@landshoppers/api
+RUN pnpm --filter @landshoppers/db exec prisma generate \
+  && pnpm --filter @landshoppers/contracts run build \
+  && pnpm --filter @landshoppers/search-listing run build \
+  && pnpm --filter @landshoppers/servicehub-match run build \
+  && pnpm --filter @landshoppers/workers exec tsc -p tsconfig.json \
+  && pnpm --filter @landshoppers/api exec tsc -p tsconfig.json
 
 ENV NODE_ENV=production
 CMD ["pnpm", "--filter", "@landshoppers/api", "start"]
