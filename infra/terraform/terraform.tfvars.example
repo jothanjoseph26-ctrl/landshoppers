@@ -6,7 +6,7 @@ aws_account_id = "107094296860"
 environment    = "production"
 app_domain     = "landshoppersrealty.com.ng"
 
-github_org  = "FILL_IN"          # your GitHub username or org
+github_org  = "propertycitycomng-dotcom"
 github_repo = "landshoppers"
 
 # ── Database (Neon) ──────────────────────────────────────────────────────────
