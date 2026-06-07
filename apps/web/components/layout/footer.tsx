@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin } from 'lucide-react'
 import { BrandLogo } from '@/components/layout/brand-logo'
+import { SITE_SALES_PHONE_DISPLAY, salesTelHref } from '@/lib/site-contact'
 
 const footerLinks = {
   properties: [
@@ -48,14 +49,14 @@ export function Footer() {
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-6">
           {/* Brand */}
           <div className="col-span-2">
-            <BrandLogo className="rounded-md bg-white px-3 py-2" imageClassName="h-9" />
+            <BrandLogo className="rounded-md bg-white px-3 py-2" imageClassName="h-12" />
             <p className="mt-4 max-w-xs text-sm text-background/70 leading-relaxed">
               Nigeria&apos;s premier real estate marketplace. Find your dream property with verified agents and developers.
             </p>
             <div className="mt-6 space-y-2">
-              <a href="tel:+2349012345678" className="flex items-center gap-2 text-sm text-background/70 hover:text-background transition-colors">
+              <a href={salesTelHref()} className="flex items-center gap-2 text-sm text-background/70 hover:text-background transition-colors">
                 <Phone className="h-4 w-4" />
-                +234 901 234 5678
+                {SITE_SALES_PHONE_DISPLAY}
               </a>
               <a href="mailto:hello@landshoppersrealty.com" className="flex items-center gap-2 text-sm text-background/70 hover:text-background transition-colors">
                 <Mail className="h-4 w-4" />

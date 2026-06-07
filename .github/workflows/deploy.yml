@@ -108,7 +108,7 @@ jobs:
           build-args: |
             NEXT_PUBLIC_API_URL=https://api.landshoppersrealty.com.ng
             NEXT_PUBLIC_APP_URL=https://landshoppersrealty.com.ng
-            NEXT_PUBLIC_SALES_WHATSAPP=2340000000000
+            NEXT_PUBLIC_SALES_WHATSAPP=2349125172692
           tags: |
             ${{ env.ECR_REGISTRY }}/landshoppers-web:${{ github.sha }}
             ${{ env.ECR_REGISTRY }}/landshoppers-web:latest

@@ -1,6 +1,7 @@
 import { Mail, MapPin, Phone } from "lucide-react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { SITE_SALES_PHONE_DISPLAY, salesTelHref } from "@/lib/site-contact"
 
 export default function ContactPage() {
   return (
@@ -26,7 +27,11 @@ export default function ContactPage() {
               Phone
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">+234 800 000 0000</CardContent>
+          <CardContent className="text-sm text-muted-foreground">
+            <a href={salesTelHref()} className="hover:text-foreground">
+              {SITE_SALES_PHONE_DISPLAY}
+            </a>
+          </CardContent>
         </Card>
         <Card>
           <CardHeader>

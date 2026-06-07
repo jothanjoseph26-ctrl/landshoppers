@@ -19,9 +19,9 @@ export function BrandLogo({
       <Image
         src="/landshoppers-logo.png"
         alt="LandShoppers"
-        width={180}
-        height={40}
-        className={cn("h-8 w-auto", imageClassName)}
+        width={240}
+        height={52}
+        className={cn("h-11 w-auto", imageClassName)}
         priority={priority}
       />
     </Link>

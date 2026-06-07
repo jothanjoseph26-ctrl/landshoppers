@@ -18,7 +18,7 @@ export default function AuthLayout({
           <div className="absolute top-1/2 left-1/3 w-48 h-48 border border-primary-foreground/20 rounded-full" />
         </div>
         <div className="relative z-10 flex flex-col justify-between p-12 text-primary-foreground">
-          <BrandLogo className="w-fit rounded-md bg-white px-3 py-2" imageClassName="h-9" />
+          <BrandLogo className="w-fit rounded-md bg-white px-3 py-2" imageClassName="h-12" />
           <div className="space-y-6">
             <h1 className="text-4xl font-bold leading-tight text-balance">
               Find Your Perfect Property in Nigeria
@@ -52,7 +52,7 @@ export default function AuthLayout({
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="lg:hidden mb-8 text-center">
-            <BrandLogo className="justify-center" imageClassName="h-10" />
+            <BrandLogo className="justify-center" imageClassName="h-12" />
           </div>
           {children}
         </div>

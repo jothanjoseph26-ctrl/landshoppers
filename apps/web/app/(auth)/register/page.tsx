@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
+import { SITE_SALES_PHONE_DISPLAY } from "@/lib/site-contact"
 import { dashboardPathForRole, formatAuthError, registerAccount } from "@/lib/api/auth"
 
 type UserRole = "buyer" | "agent" | "developer"
@@ -244,7 +245,7 @@ export default function RegisterPage() {
               <Input
                 id="phone"
                 type="tel"
-                placeholder="+234 801 234 5678"
+                placeholder={SITE_SALES_PHONE_DISPLAY}
                 className="pl-10"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}

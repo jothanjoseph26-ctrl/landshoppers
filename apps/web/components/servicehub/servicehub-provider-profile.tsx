@@ -25,6 +25,7 @@ import type {
   ServiceQuotePayload,
 } from "@/lib/api/services-marketplace"
 import { DEMO_SERVICE_PROVIDERS } from "@/lib/api/services-marketplace"
+import { SITE_SALES_PHONE_DISPLAY } from "@/lib/site-contact"
 import type { ServiceHubCategorySlug } from "@/lib/servicehub/categories"
 import { getServiceHubCategoryMeta } from "@/lib/servicehub/categories"
 
@@ -373,7 +374,7 @@ export function ServiceHubProviderProfile({
                   <div>
                     <p className="text-sm text-muted-foreground">Phone</p>
                     <a href={`tel:${p.phone ?? ""}`} className="font-medium hover:text-primary">
-                      {p.phone ?? "+234 800 000 0000"}
+                      {p.phone ?? SITE_SALES_PHONE_DISPLAY}
                     </a>
                   </div>
                 </div>

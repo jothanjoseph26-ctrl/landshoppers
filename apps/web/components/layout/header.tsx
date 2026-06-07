@@ -47,7 +47,7 @@ export function Header() {
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
         {/* Logo */}
         <div className="flex lg:flex-1">
-          <BrandLogo className="-m-1.5 p-1.5" priority />
+          <BrandLogo className="-m-1.5 p-1.5" imageClassName="h-11" priority />
         </div>
 
         {/* Mobile menu button */}
@@ -115,7 +115,7 @@ export function Header() {
         />
         <div className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-[#1A1A1A] px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-white/10">
           <div className="flex items-center justify-between">
-            <BrandLogo className="-m-1.5 p-1.5" />
+            <BrandLogo className="-m-1.5 p-1.5" imageClassName="h-11" />
             <button
               type="button"
               className="-m-2.5 rounded-md p-2.5 text-white"

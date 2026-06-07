@@ -1,5 +1,9 @@
 import type { PropertyCardProps } from "@/components/listings/property-card"
 import type { ApiListing } from "@/lib/api/types"
+import {
+  SITE_SALES_PHONE_E164,
+  SITE_SALES_WHATSAPP_DIGITS,
+} from "@/lib/site-contact"
 
 export const LISTING_PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80"
@@ -87,8 +91,8 @@ export function mapApiListingToDetailView(row: ApiListing) {
       id: "pending",
       name: "Listing agent",
       company: "LandShoppers",
-      phone: "+2340000000000",
-      whatsapp: "2340000000000",
+      phone: SITE_SALES_PHONE_E164,
+      whatsapp: SITE_SALES_WHATSAPP_DIGITS,
       image: LISTING_PLACEHOLDER_IMAGE,
       isVerified: false,
       rating: 0,

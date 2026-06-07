@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { salesWhatsAppHref } from "@/lib/site-contact"
 
 export const metadata: Metadata = {
   title: "Available Properties",
@@ -19,10 +20,13 @@ export const metadata: Metadata = {
     "Ready-to-sell LandShoppers properties for qualified buyer enquiries.",
 }
 
-const salesPhone = (process.env.NEXT_PUBLIC_SALES_WHATSAPP ?? "2340000000000").replace(
-  /\D/g,
-  "",
-)
+function enquiryHref(propertyTitle?: string) {
+  const text = propertyTitle
+    ? `Hello LandShoppers, I am interested in ${propertyTitle}. Please send details and inspection options.`
+    : "Hello LandShoppers, I want to see available properties and speak with sales."
+
+  return salesWhatsAppHref(text)
+}
 
 const properties = [
   {
@@ -114,14 +118,6 @@ const properties = [
     slug: "seed-gbagada-block",
   },
 ]
-
-function enquiryHref(propertyTitle?: string) {
-  const text = propertyTitle
-    ? `Hello LandShoppers, I am interested in ${propertyTitle}. Please send details and inspection options.`
-    : "Hello LandShoppers, I want to see available properties and speak with sales."
-
-  return `https://wa.me/${salesPhone}?text=${encodeURIComponent(text)}`
-}
 
 export default function AvailablePropertiesPage() {
   return (
