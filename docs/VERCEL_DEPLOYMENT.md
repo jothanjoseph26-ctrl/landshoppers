@@ -15,15 +15,30 @@ Run **web + API** on a single Vercel project. No ECS, Redis, or OpenSearch requi
 
 ## 1. Create Vercel project
 
-1. Import `propertycitycomng-dotcom/landshoppers` on [vercel.com](https://vercel.com).
-2. **Root directory:** repository root (uses root `vercel.json`).
-3. Framework: **Next.js** (auto-detected).
+1. [vercel.com/new](https://vercel.com/new) → import **`propertycitycomng-dotcom/landshoppers`** (the full repo).
+2. Click **Edit** next to **Root Directory** → choose **`apps/web`** (not `apps/ai-service`, not repo root).
+3. Framework should auto-detect **Next.js** (from `apps/web/package.json`).
+4. If Vercel only lists `ai-service`, you picked the wrong folder — go back and select **`apps/web`**.
 
-Build settings (already in `vercel.json`):
+### Root Directory (required)
 
-- **Install:** `corepack enable && pnpm install --frozen-lockfile`
-- **Build:** `pnpm --filter @landshoppers/db exec prisma generate && pnpm --filter @landshoppers/web build`
-- **Output:** `apps/web/.next`
+| Setting | Value |
+|---------|--------|
+| **Root Directory** | `apps/web` |
+| **Include files outside root** | Enabled (monorepo; includes `packages/*`, `apps/api`) |
+
+`apps/web/vercel.json` runs `pnpm install` from the monorepo root so workspace packages resolve.
+
+### Do not deploy on Vercel
+
+- **`apps/ai-service`** — Python/FastAPI; skip or delete that Vercel project if you created one by mistake.
+- **`apps/workers`** — needs always-on Redis workers (add later on Railway/Fly when budget allows).
+
+Build settings (in `apps/web/vercel.json`):
+
+- **Install:** `cd ../.. && corepack enable && pnpm install --frozen-lockfile`
+- **Build:** `cd ../.. && pnpm --filter @landshoppers/db exec prisma generate && pnpm --filter @landshoppers/web build`
+- **Output:** `.next` (default when root is `apps/web`)
 
 ## 2. Environment variables (Vercel → Settings → Environment Variables)
 

@@ -95,8 +95,8 @@ The Hono API is mounted at **`/api/*`** on the same Vercel deployment as Next.js
 
 ### Vercel project settings
 
-- Root directory: repository root (`vercel.json` at root)
-- Build: `pnpm --filter @landshoppers/db exec prisma generate && pnpm --filter @landshoppers/web build`
+- **Root Directory:** `apps/web` (required — Next.js lives here, not repo root)
+- Build/install: see `apps/web/vercel.json`
 
 ### Required env vars on Vercel
 
