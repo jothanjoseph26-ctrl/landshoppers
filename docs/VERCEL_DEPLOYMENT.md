@@ -49,8 +49,8 @@ Build settings (in `apps/web/vercel.json`):
 
 | Variable | Example | Notes |
 |----------|---------|--------|
-| `DATABASE_URL` | Neon **pooled** URL | Runtime + Prisma |
-| `DIRECT_URL` | Neon **direct** URL | Migrations only (optional on Vercel if you migrate from CI) |
+| `DATABASE_URL` | Neon **pooled** URL | **Required for Production + Preview** — API uses this at runtime |
+| `DIRECT_URL` | Neon **direct** URL | Same environments; used by Prisma tooling |
 | `JWT_SECRET` | long random string | Auth tokens |
 | `NEXT_PUBLIC_APP_URL` | `https://your-app.vercel.app` | Or custom domain |
 | `NEXT_PUBLIC_SALES_WHATSAPP` | `2349125172692` | Sales WhatsApp |
