@@ -15,10 +15,13 @@ Run **web + API** on a single Vercel project. No ECS, Redis, or OpenSearch requi
 
 ## 1. Create Vercel project
 
+**Troubleshooting import?** See [VERCEL_IMPORT.md](./VERCEL_IMPORT.md).
+
 1. [vercel.com/new](https://vercel.com/new) → import **`propertycitycomng-dotcom/landshoppers`** (the full repo).
-2. Click **Edit** next to **Root Directory** → choose **`apps/web`** (not `apps/ai-service`, not repo root).
-3. Framework should auto-detect **Next.js** (from `apps/web/package.json`).
-4. If Vercel only lists `ai-service`, you picked the wrong folder — go back and select **`apps/web`**.
+2. Click **Edit** next to **Root Directory**.
+3. **Type manually:** `apps/web` (even if the picker only shows `ai-service`).
+4. Framework should auto-detect **Next.js**.
+5. Do **not** deploy `apps/ai-service` — that is Python, not the website.
 
 ### Root Directory (required)
 
