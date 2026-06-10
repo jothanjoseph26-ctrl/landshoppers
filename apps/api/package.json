@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./app": "./src/app.ts",
+    "./vercel": "./src/vercel.ts"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "prebuild": "pnpm --filter @landshoppers/db run generate",

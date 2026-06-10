@@ -1,7 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "corepack enable && pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm --filter @landshoppers/web build",
+  "buildCommand": "pnpm --filter @landshoppers/db exec prisma generate && pnpm --filter @landshoppers/web build",
   "devCommand": "pnpm --filter @landshoppers/web dev",
-  "outputDirectory": "apps/web/.next"
+  "outputDirectory": "apps/web/.next",
+  "framework": "nextjs"
 }

@@ -28,6 +28,7 @@ ENV NEXT_PUBLIC_SALES_WHATSAPP=$NEXT_PUBLIC_SALES_WHATSAPP
 ENV DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/dummy?schema=public"
 ENV DIRECT_URL="postgresql://postgres:postgres@127.0.0.1:5432/dummy?schema=public"
 ENV NODE_OPTIONS="--max-old-space-size=4096"
+ENV DOCKER_BUILD=1
 RUN pnpm --filter @landshoppers/db exec prisma generate \
   && pnpm --filter @landshoppers/web run build
 

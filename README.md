@@ -87,26 +87,35 @@ pnpm --filter @landshoppers/workers dev
 
 Pull requests run lint, `prisma migrate deploy`, PostGIS verification, Python AI pytest, and production builds. Use the same `DATABASE_URL` pattern as `.github/workflows/ci.yml` for automation parity. Set `JWT_SECRET` (see `.env.example`) so `@landshoppers/api` can issue tokens.
 
-## Vercel deployment
+## Vercel deployment (recommended — web + API on one project)
 
-Deploy the web app from the monorepo. The root `vercel.json` builds only `@landshoppers/web` and outputs `apps/web/.next`.
+**Full guide:** [docs/VERCEL_DEPLOYMENT.md](docs/VERCEL_DEPLOYMENT.md)
 
-Recommended Vercel project settings:
+The Hono API is mounted at **`/api/*`** on the same Vercel deployment as Next.js (`apps/web/app/api/[[...path]]/route.ts`). Leave `NEXT_PUBLIC_API_URL` unset on Vercel to use same-origin `/api`.
 
-- Framework preset: Next.js
-- Install command: `corepack enable && pnpm install --frozen-lockfile`
-- Build command: `pnpm --filter @landshoppers/web build`
-- Output directory: `apps/web/.next`
+### Vercel project settings
 
-Set these environment variables in Vercel:
+- Root directory: repository root (`vercel.json` at root)
+- Build: `pnpm --filter @landshoppers/db exec prisma generate && pnpm --filter @landshoppers/web build`
+
+### Required env vars on Vercel
 
 ```bash
-NEXT_PUBLIC_API_URL="https://<api-host>"
-NEXT_PUBLIC_APP_URL="https://<vercel-app>"
-NEXT_PUBLIC_PORTAL_GUARD="false"
+DATABASE_URL="postgresql://..."          # Neon pooled
+DIRECT_URL="postgresql://..."            # Neon direct (migrations)
+JWT_SECRET="..."
+NEXT_PUBLIC_APP_URL="https://<your-app>.vercel.app"
+SEARCH_BACKEND="postgres"
+NEXT_PUBLIC_SALES_WHATSAPP="2349125172692"
 ```
 
-The current Vercel deployment is web-only. `apps/api`, `apps/ai-service`, workers, PostGIS, Redis, and OpenSearch still need a separate production runtime before API-backed features can work in production.
+Optional: `NEXT_PUBLIC_API_URL="https://<your-app>.vercel.app/api"` (auto-detected if omitted on Vercel).
+
+### Not needed on Vercel (leave unset to avoid extra cost)
+
+- `REDIS_URL`, `OPENSEARCH_URL`, `AI_SERVICE_URL` — background jobs and OpenSearch stay off; core app still runs.
+
+AWS ECS deploy is **paused** (manual GitHub workflow only) until you have budget for workers/search again.
 
 ## API auth (Week 2 slice)
 

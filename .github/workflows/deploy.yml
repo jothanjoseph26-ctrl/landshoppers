@@ -1,8 +1,7 @@
 name: Deploy to AWS
 
 on:
-  push:
-    branches: [main]
+  # Paused while production runs on Vercel — run manually when AWS budget allows.
   workflow_dispatch:
 
 permissions:
