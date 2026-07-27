@@ -25,7 +25,7 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const { body: jsonBody, auth: useAuth, ...rest } = options
   const base = getPublicApiBaseUrl()
-  const url = path.startsWith("http") ? path : `${base}${path.startsWith("/") ? "" : "/"}${path}`
+  const url = buildApiUrl(base, path)
 
   const buildHeaders = () => {
     const headers = new Headers(rest.headers)
@@ -41,14 +41,23 @@ export async function apiFetch<T>(
     return headers
   }
 
-  const request = () =>
-    fetch(url, {
+  const request = (requestUrl: string) =>
+    fetch(requestUrl, {
       ...rest,
       headers: buildHeaders(),
       body: jsonBody !== undefined ? JSON.stringify(jsonBody) : undefined,
     })
 
-  let res = await request()
+  let requestUrl = url
+  let res: Response
+  try {
+    res = await request(requestUrl)
+  } catch (err) {
+    const fallbackUrl = sameOriginApiFallbackUrl(base, path)
+    if (!fallbackUrl) throw err
+    requestUrl = fallbackUrl
+    res = await request(requestUrl)
+  }
   let text = await res.text()
   let json: unknown = null
   try {
@@ -58,7 +67,7 @@ export async function apiFetch<T>(
   }
 
   if (!res.ok && useAuth && res.status === 401 && (await refreshAccessTokenSingleFlight())) {
-    res = await request()
+    res = await request(requestUrl)
     text = await res.text()
     try {
       json = text ? (JSON.parse(text) as unknown) : null
@@ -72,4 +81,22 @@ export async function apiFetch<T>(
   }
 
   return json as T
+}
+
+function buildApiUrl(base: string, path: string): string {
+  return path.startsWith("http") ? path : `${base}${path.startsWith("/") ? "" : "/"}${path}`
+}
+
+function sameOriginApiFallbackUrl(base: string, path: string): string | null {
+  if (path.startsWith("http") || typeof window === "undefined") return null
+  if (base.startsWith("/")) return null
+
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`
+  try {
+    const configured = new URL(base)
+    if (configured.origin === window.location.origin) return null
+    return `${window.location.origin}/api${normalizedPath}`
+  } catch {
+    return `/api${normalizedPath}`
+  }
 }
